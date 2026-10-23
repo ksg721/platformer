@@ -1,0 +1,34 @@
+"""Shared game settings and constants."""
+
+import arcade
+
+
+# Window settings
+SCREEN_WIDTH = 800
+SCREEN_HEIGHT = 600
+SCREEN_TITLE = "Simple Platformer"
+LEVEL_HEIGHT = SCREEN_HEIGHT
+
+# Colors
+BACKGROUND_COLOR = arcade.color.SKY_BLUE
+PLAYER_COLOR = arcade.color.RED
+PLATFORM_COLOR = arcade.color.DARK_GREEN
+
+# Player settings
+PLAYER_WIDTH = 15
+PLAYER_HEIGHT = 15
+ACCELERATION = 0.4
+MAX_SPEED = 4
+FRICTION = 0.8
+GRAVITY = 0.7
+MIN_JUMP_SPEED = 7
+MAX_JUMP_SPEED = 17
+JUMP_CHARGE_RATE = 0.25
+JUMP_BAR_WIDTH = 36
+JUMP_BAR_HEIGHT = 5
+JUMP_BAR_GAP = 5
+JUMP_BAR_BACKGROUND_COLOR = arcade.color.DARK_GRAY
+JUMP_BAR_COLOR = arcade.color.YELLOW
+
+# The starting platform is centered at y=70 and is 12 pixels tall.
+PLAYER_START_Y = 83.5
