@@ -41,6 +41,14 @@ class LevelManager:
         """Create platforms for the current level."""
         return self.current_level.create_platforms(world_coordinates)
 
+    def create_current_walls(self, world_coordinates=False):
+        """Create walls for the current level."""
+        return self.current_level.create_walls(world_coordinates)
+
+    def create_current_slopes(self, world_coordinates=False):
+        """Create angled surfaces for the current level."""
+        return self.current_level.create_slopes(world_coordinates)
+
     def next_level(self):
         """Move to the next level if one exists.
 

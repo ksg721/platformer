@@ -5,7 +5,13 @@ import arcade
 from level_manager import LevelManager
 from levels import create_levels
 from player import Player
-from settings import BACKGROUND_COLOR, SCREEN_HEIGHT, SCREEN_TITLE, SCREEN_WIDTH
+from settings import (
+    BACKGROUND_COLOR,
+    GRAVITY,
+    SCREEN_HEIGHT,
+    SCREEN_TITLE,
+    SCREEN_WIDTH,
+)
 
 
 class PlatformerGame(arcade.Window):
@@ -17,6 +23,8 @@ class PlatformerGame(arcade.Window):
         self.player = Player()
         self.level_manager = LevelManager(create_levels())
         self.platforms = []
+        self.walls = []
+        self.slopes = []
 
     def setup(self):
         """Create the player and the stationary platforms."""
@@ -27,6 +35,7 @@ class PlatformerGame(arcade.Window):
         current_level = self.level_manager.current_level
         self.player.reset()
         self.platforms = self.level_manager.create_current_platforms()
+        self.slopes = self.level_manager.create_current_slopes()
 
         if spawn_from_top:
             requested_x = current_level.start_x if player_x is None else player_x
@@ -48,6 +57,7 @@ class PlatformerGame(arcade.Window):
             self.player.y = current_level.start_y
 
         self.player.sync_world_position(current_level.world_offset_y)
+        self.walls = self.level_manager.create_current_walls()
 
     def change_level(self, direction):
         """Change levels and reload the current level when possible."""
@@ -75,6 +85,10 @@ class PlatformerGame(arcade.Window):
             self.player.press_right()
         elif key in (arcade.key.W, arcade.key.SPACE, arcade.key.UP):
             self.player.press_jump(key)
+        elif key == arcade.key.N:
+            self.change_level(1)
+        elif key == arcade.key.P:
+            self.change_level(-1)
 
     def on_key_release(self, key, modifiers):
         """Send key-release actions to the player."""
@@ -94,6 +108,50 @@ class PlatformerGame(arcade.Window):
         )
         return self.player.velocity_y <= 0 and crossed_top and overlaps_horizontally
 
+    def solid_objects(self):
+        """Return all objects that should block the player."""
+        return self.platforms + self.walls
+
+    def resolve_slope_collision(
+        self, previous_bottom, incoming_velocity_y, previous_slope=None
+    ):
+        """Land on a slope when the player crosses its angled top surface."""
+        for slope in self.slopes:
+            slope_start = min(slope.start_x, slope.end_x)
+            slope_end = max(slope.start_x, slope.end_x)
+            overlaps_slope_width = (
+                self.player.right > slope_start
+                and self.player.left < slope_end
+            )
+            if not overlaps_slope_width:
+                continue
+
+            contact_x = max(slope_start, min(slope_end, self.player.x))
+            surface_y = slope.surface_y_at(contact_x)
+            crossed_surface = (
+                incoming_velocity_y <= 0
+                and previous_bottom >= surface_y - 2
+                and self.player.bottom <= surface_y + 2
+            )
+            was_on_slope = previous_slope is slope
+            is_touching_surface = self.player.bottom <= surface_y + 2
+            if crossed_surface or (was_on_slope and is_touching_surface):
+                self.player.land_on_slope(slope, incoming_velocity_y)
+                return
+
+        if previous_slope is not None:
+            self.player.current_slope = None
+
+    def maintain_slope_contact(self):
+        """Keep the player's feet on a slope while moving across it."""
+        slope = self.player.current_slope
+        if slope is None or not slope.contains_x(self.player.x):
+            return
+
+        self.player.y = slope.surface_y_at(self.player.x) + self.player.height / 2
+        self.player.velocity_y = 0
+        self.player.on_ground = True
+
     def player_is_standing_on(self, platform):
         """Return whether the player is currently standing on a platform."""
         touching_top = abs(self.player.bottom - platform.top) < 0.1
@@ -102,6 +160,92 @@ class PlatformerGame(arcade.Window):
             and self.player.left < platform.right
         )
         return self.player.on_ground and touching_top and overlaps_horizontally
+
+    def resolve_wall_collisions(self, previous_x):
+        """Stop the player when horizontal movement crosses a solid object."""
+        for solid_object in self.solid_objects():
+            overlaps_vertically = (
+                self.player.top > solid_object.bottom
+                and self.player.bottom < solid_object.top
+            )
+            if not overlaps_vertically:
+                continue
+
+            previous_left = previous_x - self.player.width / 2
+            previous_right = previous_x + self.player.width / 2
+
+            if (
+                previous_right <= solid_object.left
+                and self.player.right > solid_object.left
+            ):
+                self.player.x = solid_object.left - self.player.width / 2
+                self.player.velocity_x = 0
+            elif (
+                previous_left >= solid_object.right
+                and self.player.left < solid_object.right
+            ):
+                self.player.x = solid_object.right + self.player.width / 2
+                self.player.velocity_x = 0
+
+    def resolve_vertical_collisions(self, previous_bottom, previous_top):
+        """Land on or bounce off the top and bottom of solid objects."""
+        for solid_object in self.solid_objects():
+            overlaps_horizontally = (
+                self.player.right > solid_object.left
+                and self.player.left < solid_object.right
+            )
+            if not overlaps_horizontally:
+                continue
+
+            if (
+                self.player.velocity_y <= 0
+                and previous_bottom >= solid_object.top
+                and self.player.bottom < solid_object.top
+            ):
+                self.player.land_on(solid_object.top)
+                return
+
+            if (
+                self.player.velocity_y > 0
+                and previous_top <= solid_object.bottom
+                and self.player.top > solid_object.bottom
+            ):
+                self.player.y = solid_object.bottom - self.player.height / 2
+                self.player.velocity_y = 0
+                return
+
+    def resolve_carried_vertical_collisions(self, previous_y, standing_platform):
+        """Stop a moving platform from carrying the player through solids."""
+        vertical_change = self.player.y - previous_y
+        if abs(vertical_change) < 0.001:
+            return
+
+        previous_bottom = previous_y - self.player.height / 2
+        previous_top = previous_y + self.player.height / 2
+
+        for solid_object in self.solid_objects():
+            if solid_object is standing_platform:
+                continue
+
+            overlaps_horizontally = (
+                self.player.right > solid_object.left
+                and self.player.left < solid_object.right
+            )
+            overlaps_vertically = (
+                self.player.top > solid_object.bottom
+                and self.player.bottom < solid_object.top
+            )
+            if not overlaps_horizontally or not overlaps_vertically:
+                continue
+
+            if vertical_change > 0 and previous_top <= solid_object.bottom:
+                self.player.y = solid_object.bottom - self.player.height / 2
+                self.player.velocity_y = 0
+                return
+
+            if vertical_change < 0 and previous_bottom >= solid_object.top:
+                self.player.land_on(solid_object.top)
+                return
 
     def on_update(self, delta_time):
         """Update all game objects once per frame."""
@@ -112,24 +256,54 @@ class PlatformerGame(arcade.Window):
                 standing_platform = platform
                 break
 
+        previous_carried_x = self.player.x
+        previous_carried_y = self.player.y
+
         for platform in self.platforms:
             old_x = platform.center_x
             old_y = platform.center_y
-            platform.update()
+            blockers = self.walls + self.slopes + [
+                other for other in self.platforms if other is not platform
+            ]
+            platform.update(blockers)
 
             # Move the player by the same amount as the platform underneath them.
             if platform is standing_platform:
                 self.player.x += platform.center_x - old_x
                 self.player.y += platform.center_y - old_y
 
-        self.player.update_jump_charge()
-        self.player.update_horizontal_position()
-        previous_bottom = self.player.update_vertical_position()
+        # A moving platform can carry the player into a wall even when the
+        # player is not pressing a movement key. Resolve that carry movement
+        # before applying the player's own movement for this frame.
+        if standing_platform is not None:
+            self.resolve_wall_collisions(previous_carried_x)
+            self.resolve_carried_vertical_collisions(
+                previous_carried_y,
+                standing_platform,
+            )
 
-        for platform in self.platforms:
-            if self.player_lands_on_platform(previous_bottom, platform):
-                self.player.land_on(platform.top)
-                break
+        self.player.update_jump_charge()
+        if (
+            self.player.current_slope
+            and self.player.on_ground
+        ):
+            self.player.update_slope_physics(self.player.current_slope)
+
+        previous_x = self.player.x
+        self.player.update_horizontal_position()
+        self.resolve_wall_collisions(previous_x)
+        self.maintain_slope_contact()
+        previous_top = self.player.top
+        incoming_velocity_y = self.player.velocity_y
+        previous_slope = self.player.current_slope
+        previous_bottom = self.player.update_vertical_position()
+        self.resolve_vertical_collisions(previous_bottom, previous_top)
+        if not self.player.on_ground:
+            self.resolve_slope_collision(
+                previous_bottom,
+                incoming_velocity_y,
+                previous_slope,
+            )
 
         if self.player.top < 0:
             self.change_level(-1)
@@ -143,6 +317,12 @@ class PlatformerGame(arcade.Window):
     def on_draw(self):
         """Draw all game objects."""
         self.clear()
+
+        for wall in self.walls:
+            wall.draw()
+
+        for slope in self.slopes:
+            slope.draw()
 
         for platform in self.platforms:
             platform.draw()
