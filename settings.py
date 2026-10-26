@@ -23,8 +23,11 @@ MAX_SPEED = 4
 FRICTION = 0.8
 GRAVITY = 0.7
 MIN_JUMP_SPEED = 7
+# A full charge takes about 34 frames at 60 FPS. This gives the player a
+# compact, repeatable timing window to learn instead of a long hold.
 MAX_JUMP_SPEED = 17
-JUMP_CHARGE_RATE = 0.25
+JUMP_CHARGE_RATE = 0.5
+JUMP_CHARGE_STEER_ACCELERATION = 0.2
 JUMP_BAR_WIDTH = 36
 JUMP_BAR_HEIGHT = 5
 JUMP_BAR_GAP = 5

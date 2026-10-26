@@ -7,6 +7,7 @@ from settings import (
     FRICTION,
     GRAVITY,
     JUMP_CHARGE_RATE,
+    JUMP_CHARGE_STEER_ACCELERATION,
     JUMP_BAR_BACKGROUND_COLOR,
     JUMP_BAR_COLOR,
     JUMP_BAR_GAP,
@@ -115,28 +116,45 @@ class Player:
 
     def update_horizontal_position(self):
         """Accelerate, slow down, and move horizontally."""
+        if not self.on_ground:
+            # A jump is committed at launch. Horizontal input cannot change
+            # the trajectory until the player lands or hits a wall.
+            self.x += self.velocity_x
+            self.keep_inside_screen()
+            return
+
         if self.jump_keys_held:
-            # Jump charging disables steering, but existing momentum still
-            # carries the player until friction slows it down.
-            self.velocity_x *= FRICTION
-        else:
+            # Charging does not move the player, but it can shape the launch
+            # direction. This preserves the Jump King-style decision without
+            # allowing the player to walk around while charging.
             if self.left_pressed and not self.right_pressed:
-                self.velocity_x -= ACCELERATION
+                self.velocity_x -= JUMP_CHARGE_STEER_ACCELERATION
             elif self.right_pressed and not self.left_pressed:
-                self.velocity_x += ACCELERATION
+                self.velocity_x += JUMP_CHARGE_STEER_ACCELERATION
             else:
-                # Friction slows the player when no horizontal direction is held.
-                friction = (
-                    SLOPE_SLIDE_FRICTION
-                    if self.current_slope and self.slope_sliding
-                    else FRICTION
-                )
-                self.velocity_x *= friction
+                self.velocity_x *= FRICTION
+        elif self.left_pressed and not self.right_pressed:
+            self.velocity_x -= ACCELERATION
+        elif self.right_pressed and not self.left_pressed:
+            self.velocity_x += ACCELERATION
+        else:
+            # Friction slows the player when no horizontal direction is held.
+            friction = (
+                SLOPE_SLIDE_FRICTION
+                if self.current_slope and self.slope_sliding
+                else FRICTION
+            )
+            self.velocity_x *= friction
 
         self.velocity_x = max(-MAX_SPEED, min(MAX_SPEED, self.velocity_x))
-        self.x += self.velocity_x
+        if not self.jump_keys_held:
+            self.x += self.velocity_x
 
         # Keep the player inside the left and right edges of the window.
+        self.keep_inside_screen()
+
+    def keep_inside_screen(self):
+        """Keep the player inside the horizontal screen boundaries."""
         left_edge = self.width / 2
         right_edge = SCREEN_WIDTH - self.width / 2
 
@@ -294,37 +312,39 @@ class Player:
             1,
         )
 
-        # Draw the jump-power bar directly below the player.
-        bar_left = self.x - JUMP_BAR_WIDTH / 2
-        bar_bottom = self.bottom - JUMP_BAR_GAP - JUMP_BAR_HEIGHT
-        arcade.draw_lbwh_rectangle_filled(
-            bar_left - 2,
-            bar_bottom - 2,
-            JUMP_BAR_WIDTH + 4,
-            JUMP_BAR_HEIGHT + 4,
-            (20, 27, 45, 180),
-        )
-        arcade.draw_lbwh_rectangle_filled(
-            bar_left,
-            bar_bottom,
-            JUMP_BAR_WIDTH,
-            JUMP_BAR_HEIGHT,
-            JUMP_BAR_BACKGROUND_COLOR,
-        )
+        # Show the power bar only while a jump is being prepared. Keeping it
+        # contextual preserves the player's focus on the landing geometry.
+        if self.jump_charge > 0 or self.jump_keys_held:
+            bar_left = self.x - JUMP_BAR_WIDTH / 2
+            bar_bottom = self.bottom - JUMP_BAR_GAP - JUMP_BAR_HEIGHT
+            arcade.draw_lbwh_rectangle_filled(
+                bar_left - 2,
+                bar_bottom - 2,
+                JUMP_BAR_WIDTH + 4,
+                JUMP_BAR_HEIGHT + 4,
+                (20, 27, 45, 150),
+            )
+            arcade.draw_lbwh_rectangle_filled(
+                bar_left,
+                bar_bottom,
+                JUMP_BAR_WIDTH,
+                JUMP_BAR_HEIGHT,
+                JUMP_BAR_BACKGROUND_COLOR,
+            )
 
-        charge_ratio = self.jump_charge / MAX_JUMP_SPEED
-        arcade.draw_lbwh_rectangle_filled(
-            bar_left,
-            bar_bottom,
-            JUMP_BAR_WIDTH * charge_ratio,
-            JUMP_BAR_HEIGHT,
-            JUMP_BAR_COLOR,
-        )
-        arcade.draw_lbwh_rectangle_outline(
-            bar_left,
-            bar_bottom,
-            JUMP_BAR_WIDTH,
-            JUMP_BAR_HEIGHT,
-            (255, 243, 186),
-            1,
-        )
+            charge_ratio = self.jump_charge / MAX_JUMP_SPEED
+            arcade.draw_lbwh_rectangle_filled(
+                bar_left,
+                bar_bottom,
+                JUMP_BAR_WIDTH * charge_ratio,
+                JUMP_BAR_HEIGHT,
+                JUMP_BAR_COLOR,
+            )
+            arcade.draw_lbwh_rectangle_outline(
+                bar_left,
+                bar_bottom,
+                JUMP_BAR_WIDTH,
+                JUMP_BAR_HEIGHT,
+                (255, 243, 186),
+                1,
+            )
