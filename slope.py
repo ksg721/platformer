@@ -7,6 +7,11 @@ import arcade
 from settings import PLATFORM_COLOR
 
 
+SLOPE_BODY_COLOR = (61, 76, 98)
+SLOPE_TOP_COLOR = (126, 203, 176)
+SLOPE_MARK_COLOR = (102, 151, 142)
+
+
 class Slope:
     """A thick line segment that acts as an angled top surface."""
 
@@ -68,7 +73,7 @@ class Slope:
         )
 
     def draw(self):
-        """Draw the slope as a thick quadrilateral."""
+        """Draw the slope as a textured, solid quadrilateral."""
         normal_x = -self.tangent_y * self.thickness / 2
         normal_y = self.tangent_x * self.thickness / 2
         points = (
@@ -81,7 +86,39 @@ class Slope:
             self.start_x - normal_x,
             self.start_y - normal_y,
         )
-        arcade.draw_polygon_filled(
-            [(points[index], points[index + 1]) for index in range(0, len(points), 2)],
-            PLATFORM_COLOR,
+        polygon = [
+            (points[index], points[index + 1])
+            for index in range(0, len(points), 2)
+        ]
+        arcade.draw_polygon_filled(polygon, SLOPE_BODY_COLOR)
+        arcade.draw_polygon_outline(polygon, PLATFORM_COLOR, 1)
+
+        # The upper edge is brighter so the intended landing surface is
+        # visible even against the darker background.
+        top_start_x = self.start_x + normal_x
+        top_start_y = self.start_y + normal_y
+        top_end_x = self.end_x + normal_x
+        top_end_y = self.end_y + normal_y
+        arcade.draw_line(
+            top_start_x,
+            top_start_y,
+            top_end_x,
+            top_end_y,
+            SLOPE_TOP_COLOR,
+            3,
         )
+
+        # Repeated diagonal marks communicate the slope direction without
+        # changing its collision shape.
+        for amount in (0.25, 0.5, 0.75):
+            center_x = self.start_x + self.change_x * amount
+            center_y = self.start_y + self.change_y * amount
+            mark_length = 5
+            arcade.draw_line(
+                center_x - self.tangent_y * mark_length,
+                center_y + self.tangent_x * mark_length,
+                center_x + self.tangent_y * mark_length,
+                center_y - self.tangent_x * mark_length,
+                SLOPE_MARK_COLOR,
+                1,
+            )

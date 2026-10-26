@@ -12,6 +12,7 @@ from settings import (
     SCREEN_TITLE,
     SCREEN_WIDTH,
 )
+from visuals import BackgroundRenderer, ParticleSystem, StructureRenderer
 
 
 class PlatformerGame(arcade.Window):
@@ -25,6 +26,34 @@ class PlatformerGame(arcade.Window):
         self.platforms = []
         self.walls = []
         self.slopes = []
+        self.background_renderer = BackgroundRenderer()
+        self.structure_renderer = StructureRenderer()
+        self.particles = ParticleSystem()
+        self.slide_particle_timer = 0.0
+        self.title_text = arcade.Text(
+            "VERTICAL ASCENT",
+            26,
+            SCREEN_HEIGHT - 29,
+            (226, 246, 223),
+            10,
+            bold=True,
+        )
+        self.level_text = arcade.Text(
+            "",
+            26,
+            SCREEN_HEIGHT - 43,
+            (245, 197, 103),
+            9,
+            bold=True,
+        )
+        self.controls_text = arcade.Text(
+            "A/D or ARROWS  MOVE     HOLD W / SPACE / UP  CHARGE",
+            SCREEN_WIDTH / 2,
+            16,
+            (225, 236, 220, 190),
+            9,
+            anchor_x="center",
+        )
 
     def setup(self):
         """Create the player and the stationary platforms."""
@@ -34,6 +63,7 @@ class PlatformerGame(arcade.Window):
         """Load the platforms and starting position for the current level."""
         current_level = self.level_manager.current_level
         self.player.reset()
+        self.particles.clear()
         self.platforms = self.level_manager.create_current_platforms()
         self.slopes = self.level_manager.create_current_slopes()
 
@@ -249,6 +279,12 @@ class PlatformerGame(arcade.Window):
 
     def on_update(self, delta_time):
         """Update all game objects once per frame."""
+        self.background_renderer.update(delta_time)
+        self.particles.update(delta_time)
+        self.slide_particle_timer -= delta_time
+
+        was_on_ground = self.player.on_ground
+
         # Remember the platform carrying the player before platforms move.
         standing_platform = None
         for platform in self.platforms:
@@ -305,6 +341,26 @@ class PlatformerGame(arcade.Window):
                 previous_slope,
             )
 
+        # Visual feedback is based on the same physics transitions that the
+        # player experiences, so effects never change gameplay behavior.
+        if was_on_ground and not self.player.on_ground and self.player.velocity_y > 0:
+            self.particles.emit_jump(self.player.x, self.player.bottom)
+        elif not was_on_ground and self.player.on_ground:
+            self.particles.emit_landing(
+                self.player.x,
+                self.player.bottom,
+                incoming_velocity_y,
+            )
+
+        if self.player.slope_sliding and self.slide_particle_timer <= 0:
+            direction = 1 if self.player.velocity_x >= 0 else -1
+            self.particles.emit_slide(
+                self.player.x,
+                self.player.bottom,
+                direction,
+            )
+            self.slide_particle_timer = 0.1
+
         if self.player.top < 0:
             self.change_level(-1)
 
@@ -318,6 +374,9 @@ class PlatformerGame(arcade.Window):
         """Draw all game objects."""
         self.clear()
 
+        self.background_renderer.draw(self.level_manager.current_level_number)
+        self.structure_renderer.draw(self.level_manager.current_level_number)
+
         for wall in self.walls:
             wall.draw()
 
@@ -327,4 +386,50 @@ class PlatformerGame(arcade.Window):
         for platform in self.platforms:
             platform.draw()
 
+        self.particles.draw()
         self.player.draw()
+        self.draw_hud()
+
+    def draw_hud(self):
+        """Draw compact interface information above the game world."""
+        level_number = self.level_manager.current_level_number
+        total_levels = self.level_manager.total_levels
+
+        arcade.draw_lbwh_rectangle_filled(
+            16,
+            SCREEN_HEIGHT - 48,
+            180,
+            32,
+            (14, 22, 40, 190),
+        )
+        arcade.draw_lbwh_rectangle_outline(
+            16,
+            SCREEN_HEIGHT - 48,
+            180,
+            32,
+            (143, 211, 191),
+            1,
+        )
+        self.level_text.text = f"LEVEL {level_number:02d} / {total_levels:02d}"
+        self.title_text.draw()
+        self.level_text.draw()
+
+        progress_left = SCREEN_WIDTH - 170
+        progress_bottom = SCREEN_HEIGHT - 38
+        progress_width = 138
+        arcade.draw_lbwh_rectangle_filled(
+            progress_left,
+            progress_bottom,
+            progress_width,
+            5,
+            (14, 22, 40, 190),
+        )
+        progress_ratio = (level_number - 1) / max(1, total_levels - 1)
+        arcade.draw_lbwh_rectangle_filled(
+            progress_left,
+            progress_bottom,
+            progress_width * progress_ratio,
+            5,
+            (143, 211, 191),
+        )
+        self.controls_text.draw()

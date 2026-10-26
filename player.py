@@ -26,6 +26,13 @@ from settings import (
 )
 
 
+PLAYER_BODY_COLOR = (224, 82, 101)
+PLAYER_SHADOW_COLOR = (91, 35, 66)
+PLAYER_HIGHLIGHT_COLOR = (255, 174, 138)
+PLAYER_VISOR_COLOR = (44, 54, 88)
+PLAYER_EYE_COLOR = (238, 255, 214)
+
+
 class Player:
     """The controllable player character."""
 
@@ -216,18 +223,87 @@ class Player:
         self.world_y = self.y + level_offset_y
 
     def draw(self):
-        """Draw the player."""
+        """Draw the player as a small expressive explorer character."""
+        # A soft charge glow makes it clear that the player is preparing a
+        # jump, especially against the darker upper-level backgrounds.
+        if self.jump_charge > 0:
+            glow_radius = 10 + self.jump_charge / MAX_JUMP_SPEED * 6
+            arcade.draw_circle_filled(
+                self.x,
+                self.y,
+                glow_radius,
+                (255, 206, 105, 34),
+            )
+
+        # A small contact shadow helps the player read against platforms.
+        if self.on_ground:
+            shadow_width = max(5, min(14, 8 + abs(self.velocity_x)))
+            arcade.draw_ellipse_filled(
+                self.x,
+                self.bottom - 2,
+                shadow_width,
+                3,
+                (18, 24, 43, 100),
+            )
+
+        arcade.draw_lbwh_rectangle_filled(
+            self.left + 2,
+            self.bottom - 2,
+            self.width,
+            self.height,
+            PLAYER_SHADOW_COLOR,
+        )
         arcade.draw_lbwh_rectangle_filled(
             self.left,
             self.bottom,
             self.width,
             self.height,
+            PLAYER_BODY_COLOR,
+        )
+        arcade.draw_lbwh_rectangle_outline(
+            self.left,
+            self.bottom,
+            self.width,
+            self.height,
             PLAYER_COLOR,
+            1,
+        )
+
+        # The visor and eye direction give the tiny character a readable face.
+        visor_width = max(5, self.width - 5)
+        arcade.draw_lbwh_rectangle_filled(
+            self.x - visor_width / 2,
+            self.y + 1,
+            visor_width,
+            4,
+            PLAYER_VISOR_COLOR,
+        )
+        eye_direction = 1 if self.velocity_x >= 0 else -1
+        arcade.draw_circle_filled(
+            self.x + eye_direction * 2,
+            self.y + 3,
+            1,
+            PLAYER_EYE_COLOR,
+        )
+        arcade.draw_line(
+            self.left + 3,
+            self.top - 2,
+            self.right - 3,
+            self.top - 2,
+            PLAYER_HIGHLIGHT_COLOR,
+            1,
         )
 
         # Draw the jump-power bar directly below the player.
         bar_left = self.x - JUMP_BAR_WIDTH / 2
         bar_bottom = self.bottom - JUMP_BAR_GAP - JUMP_BAR_HEIGHT
+        arcade.draw_lbwh_rectangle_filled(
+            bar_left - 2,
+            bar_bottom - 2,
+            JUMP_BAR_WIDTH + 4,
+            JUMP_BAR_HEIGHT + 4,
+            (20, 27, 45, 180),
+        )
         arcade.draw_lbwh_rectangle_filled(
             bar_left,
             bar_bottom,
@@ -243,4 +319,12 @@ class Player:
             JUMP_BAR_WIDTH * charge_ratio,
             JUMP_BAR_HEIGHT,
             JUMP_BAR_COLOR,
+        )
+        arcade.draw_lbwh_rectangle_outline(
+            bar_left,
+            bar_bottom,
+            JUMP_BAR_WIDTH,
+            JUMP_BAR_HEIGHT,
+            (255, 243, 186),
+            1,
         )

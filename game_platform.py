@@ -5,6 +5,14 @@ import arcade
 from settings import PLATFORM_COLOR
 
 
+PLATFORM_BODY_COLOR = (48, 63, 83)
+PLATFORM_SHADOW_COLOR = (24, 32, 49)
+PLATFORM_TOP_COLOR = (112, 190, 169)
+MOVING_PLATFORM_TOP_COLOR = (245, 193, 91)
+PLATFORM_HIGHLIGHT_COLOR = (188, 231, 201)
+PLATFORM_BOLT_COLOR = (34, 43, 61)
+
+
 class Platform:
     """A rectangular platform that can be stationary or moving."""
 
@@ -119,11 +127,71 @@ class Platform:
         )
 
     def draw(self):
-        """Draw the platform."""
+        """Draw the platform with a readable, layered material style."""
+        is_moving = bool(self.movement_range_x or self.movement_range_y)
+        top_color = (
+            MOVING_PLATFORM_TOP_COLOR
+            if is_moving
+            else PLATFORM_TOP_COLOR
+        )
+
+        # The offset shadow gives the thin platform a little depth.
+        arcade.draw_lbwh_rectangle_filled(
+            self.left + 2,
+            self.bottom - 3,
+            max(1, self.width - 2),
+            self.height + 3,
+            PLATFORM_SHADOW_COLOR,
+        )
         arcade.draw_lbwh_rectangle_filled(
             self.left,
-            self.center_y - self.height / 2,
+            self.bottom,
+            self.width,
+            self.height,
+            PLATFORM_BODY_COLOR,
+        )
+        arcade.draw_lbwh_rectangle_filled(
+            self.left,
+            self.top - 3,
+            self.width,
+            3,
+            top_color,
+        )
+        arcade.draw_line(
+            self.left + 2,
+            self.top - 1,
+            self.right - 2,
+            self.top - 1,
+            PLATFORM_HIGHLIGHT_COLOR,
+            1,
+        )
+        arcade.draw_lbwh_rectangle_outline(
+            self.left,
+            self.bottom,
             self.width,
             self.height,
             PLATFORM_COLOR,
+            1,
         )
+
+        # Small bolts make moving platforms visually distinct and give the
+        # wider platforms a little more texture.
+        if self.width >= 24:
+            for bolt_x in (self.left + 5, self.right - 5):
+                arcade.draw_circle_filled(
+                    bolt_x,
+                    self.center_y - 1,
+                    1.2,
+                    PLATFORM_BOLT_COLOR,
+                )
+
+        if is_moving and self.width >= 30:
+            arrow_y = self.bottom - 6
+            arcade.draw_line(
+                self.left + 7,
+                arrow_y,
+                self.right - 7,
+                arrow_y,
+                MOVING_PLATFORM_TOP_COLOR,
+                1,
+            )

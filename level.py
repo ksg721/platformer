@@ -3,7 +3,7 @@
 from game_platform import Platform
 from settings import LEVEL_HEIGHT
 from slope import Slope
-from wall import Wall
+from wall import Wall, WallBarrier
 
 
 class Level:
@@ -55,6 +55,17 @@ class Level:
         """Create and return this level's walls."""
         walls = []
         for data in self.wall_data:
+            if "openings" in data:
+                barrier_data = data.copy()
+                openings = barrier_data.pop("openings")
+                barrier = WallBarrier(
+                    openings=openings,
+                    **barrier_data,
+                )
+                world_offset = self.world_offset_y if world_coordinates else 0
+                walls.extend(barrier.create_walls(world_offset))
+                continue
+
             wall_data = data.copy()
             if world_coordinates:
                 wall_data["center_y"] += self.world_offset_y
