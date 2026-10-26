@@ -28,6 +28,12 @@ MIN_JUMP_SPEED = 7
 MAX_JUMP_SPEED = 17
 JUMP_CHARGE_RATE = 0.5
 JUMP_CHARGE_STEER_ACCELERATION = 0.2
+# These are absolute screen-space launch angles. The full upward semicircle
+# remains available, while the small tolerance makes straight-up aiming easy.
+MIN_JUMP_ANGLE_DEGREES = 25
+MAX_JUMP_ANGLE_DEGREES = 155
+VERTICAL_AIM_TOLERANCE = 6
+JUMP_AIM_GUIDE_LENGTH = 34
 JUMP_BAR_WIDTH = 36
 JUMP_BAR_HEIGHT = 5
 JUMP_BAR_GAP = 5

@@ -47,7 +47,7 @@ class PlatformerGame(arcade.Window):
             bold=True,
         )
         self.controls_text = arcade.Text(
-            "A/D or ARROWS  MOVE     HOLD W / SPACE / UP  CHARGE",
+            "A/D or ARROWS  MOVE     HOLD LEFT CLICK  AIM + CHARGE",
             SCREEN_WIDTH / 2,
             16,
             (225, 236, 220, 190),
@@ -113,8 +113,6 @@ class PlatformerGame(arcade.Window):
             self.player.press_left()
         elif key in (arcade.key.RIGHT, arcade.key.D):
             self.player.press_right()
-        elif key in (arcade.key.W, arcade.key.SPACE, arcade.key.UP):
-            self.player.press_jump(key)
         elif key == arcade.key.N:
             self.change_level(1)
         elif key == arcade.key.P:
@@ -126,8 +124,21 @@ class PlatformerGame(arcade.Window):
             self.player.release_left()
         elif key in (arcade.key.RIGHT, arcade.key.D):
             self.player.release_right()
-        elif key in (arcade.key.W, arcade.key.SPACE, arcade.key.UP):
-            self.player.release_jump(key)
+
+    def on_mouse_motion(self, x, y, dx, dy):
+        """Update the player's jump aim as the mouse moves."""
+        self.player.set_mouse_position(x, y)
+
+    def on_mouse_press(self, x, y, button, modifiers):
+        """Start charging a jump with the left mouse button."""
+        if button == arcade.MOUSE_BUTTON_LEFT:
+            self.player.set_mouse_position(x, y)
+            self.player.press_jump(button)
+
+    def on_mouse_release(self, x, y, button, modifiers):
+        """Launch the charged jump when the left mouse button is released."""
+        if button == arcade.MOUSE_BUTTON_LEFT:
+            self.player.release_jump(button, x, y)
 
     def player_lands_on_platform(self, previous_bottom, platform):
         """Return whether the falling player crossed a platform's top."""

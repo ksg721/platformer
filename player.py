@@ -1,5 +1,7 @@
 """The player character and player movement behavior."""
 
+import math
+
 import arcade
 
 from settings import (
@@ -8,13 +10,16 @@ from settings import (
     GRAVITY,
     JUMP_CHARGE_RATE,
     JUMP_CHARGE_STEER_ACCELERATION,
+    JUMP_AIM_GUIDE_LENGTH,
     JUMP_BAR_BACKGROUND_COLOR,
     JUMP_BAR_COLOR,
     JUMP_BAR_GAP,
     JUMP_BAR_HEIGHT,
     JUMP_BAR_WIDTH,
     MAX_JUMP_SPEED,
+    MAX_JUMP_ANGLE_DEGREES,
     MIN_JUMP_SPEED,
+    MIN_JUMP_ANGLE_DEGREES,
     MAX_SPEED,
     PLAYER_COLOR,
     PLAYER_HEIGHT,
@@ -24,6 +29,7 @@ from settings import (
     SCREEN_WIDTH,
     SLOPE_STATIC_FRICTION,
     SLOPE_SLIDE_FRICTION,
+    VERTICAL_AIM_TOLERANCE,
 )
 
 
@@ -52,6 +58,8 @@ class Player:
         self.right_pressed = False
         self.current_slope = None
         self.slope_sliding = False
+        self.mouse_x = self.x
+        self.mouse_y = self.y + 100
 
     @property
     def left(self):
@@ -90,21 +98,67 @@ class Player:
         self.right_pressed = False
 
     def press_jump(self, key):
-        """Begin charging a jump while the player is grounded."""
+        """Begin charging a mouse-controlled jump while grounded."""
         self.jump_keys_held.add(key)
 
-    def release_jump(self, key):
-        """Release a jump and launch using the stored charge."""
+    def release_jump(self, key, mouse_x=None, mouse_y=None):
+        """Release a jump toward the current mouse-controlled angle."""
         self.jump_keys_held.discard(key)
 
+        if mouse_x is not None and mouse_y is not None:
+            self.set_mouse_position(mouse_x, mouse_y)
+
         if not self.jump_keys_held and self.on_ground:
-            self.velocity_y = max(MIN_JUMP_SPEED, self.jump_charge)
+            jump_speed = max(MIN_JUMP_SPEED, self.jump_charge)
+            jump_angle = self.get_jump_angle()
+            self.velocity_x = math.cos(jump_angle) * jump_speed
+            self.velocity_y = math.sin(jump_angle) * jump_speed
             self.jump_charge = 0
             self.on_ground = False
             self.current_slope = None
             self.slope_sliding = False
         elif not self.on_ground:
             self.jump_charge = 0
+
+    def set_mouse_position(self, mouse_x, mouse_y):
+        """Remember the mouse position used to aim the next jump."""
+        self.mouse_x = mouse_x
+        self.mouse_y = mouse_y
+
+    def get_jump_angle(self):
+        """Return an upward launch angle based on the mouse position."""
+        change_x = self.mouse_x - self.x
+        change_y = self.mouse_y - self.y
+
+        if abs(change_x) <= VERTICAL_AIM_TOLERANCE and change_y > 0:
+            return math.pi / 2
+
+        # Use the actual cursor angle so small mouse movements create small
+        # launch-angle changes. Downward cursor positions are clamped to the
+        # shallowest upward angle instead of allowing downward jumps.
+        if change_y <= 0:
+            raw_angle = (
+                0
+                if change_x > 0
+                else math.pi
+            )
+        else:
+            raw_angle = math.atan2(change_y, change_x)
+
+        minimum_angle = math.radians(MIN_JUMP_ANGLE_DEGREES)
+        maximum_angle = math.radians(MAX_JUMP_ANGLE_DEGREES)
+        return max(
+            minimum_angle,
+            min(maximum_angle, raw_angle),
+        )
+
+    def jump_aim_endpoint(self):
+        """Return a short visual guide endpoint for the current aim."""
+        angle = self.get_jump_angle()
+        return (
+            self.x + math.cos(angle) * JUMP_AIM_GUIDE_LENGTH,
+            self.y + math.sin(angle) * JUMP_AIM_GUIDE_LENGTH,
+        )
 
     def update_jump_charge(self):
         """Increase jump power while a jump key is held on the ground."""
@@ -242,6 +296,23 @@ class Player:
 
     def draw(self):
         """Draw the player as a small expressive explorer character."""
+        if self.jump_keys_held:
+            aim_x, aim_y = self.jump_aim_endpoint()
+            arcade.draw_line(
+                self.x,
+                self.y,
+                aim_x,
+                aim_y,
+                (255, 225, 137, 170),
+                2,
+            )
+            arcade.draw_circle_filled(
+                aim_x,
+                aim_y,
+                2,
+                (255, 241, 177, 210),
+            )
+
         # A soft charge glow makes it clear that the player is preparing a
         # jump, especially against the darker upper-level backgrounds.
         if self.jump_charge > 0:
