@@ -2,6 +2,7 @@
 
 import arcade
 
+from camera import Camera
 from level_manager import LevelManager
 from levels import create_levels
 from player import Player
@@ -22,10 +23,14 @@ class PlatformerGame(arcade.Window):
         super().__init__(SCREEN_WIDTH, SCREEN_HEIGHT, SCREEN_TITLE)
         self.background_color = BACKGROUND_COLOR
         self.player = Player()
+        self.camera = Camera()
         self.level_manager = LevelManager(create_levels())
         self.platforms = []
         self.walls = []
         self.slopes = []
+        self.previous_platforms = []
+        self.previous_walls = []
+        self.previous_slopes = []
         self.background_renderer = BackgroundRenderer()
         self.structure_renderer = StructureRenderer()
         self.particles = ParticleSystem()
@@ -59,13 +64,28 @@ class PlatformerGame(arcade.Window):
         """Create the player and the stationary platforms."""
         self.load_current_level()
 
+    def load_level_objects(self):
+        """Load the current level's objects in world coordinates."""
+        self.platforms = self.level_manager.create_current_platforms(
+            world_coordinates=True
+        )
+        self.walls = self.level_manager.create_current_walls(
+            world_coordinates=True
+        )
+        self.slopes = self.level_manager.create_current_slopes(
+            world_coordinates=True
+        )
+
     def load_current_level(self, player_x=None, spawn_from_top=False):
         """Load the platforms and starting position for the current level."""
         current_level = self.level_manager.current_level
+        self.camera.set_level(current_level.level_index)
         self.player.reset()
         self.particles.clear()
-        self.platforms = self.level_manager.create_current_platforms()
-        self.slopes = self.level_manager.create_current_slopes()
+        self.previous_platforms = []
+        self.previous_walls = []
+        self.previous_slopes = []
+        self.load_level_objects()
 
         if spawn_from_top:
             requested_x = current_level.start_x if player_x is None else player_x
@@ -73,7 +93,11 @@ class PlatformerGame(arcade.Window):
                 self.player.width / 2,
                 min(SCREEN_WIDTH - self.player.width / 2, requested_x),
             )
-            self.player.y = SCREEN_HEIGHT + self.player.height / 2
+            self.player.y = (
+                current_level.world_offset_y
+                + SCREEN_HEIGHT
+                + self.player.height / 2
+            )
             self.player.velocity_y = 0
             self.player.on_ground = False
         else:
@@ -84,13 +108,16 @@ class PlatformerGame(arcade.Window):
                     self.player.width / 2,
                     min(SCREEN_WIDTH - self.player.width / 2, player_x),
                 )
-            self.player.y = current_level.start_y
+            self.player.y = current_level.world_offset_y + current_level.start_y
 
-        self.player.sync_world_position(current_level.world_offset_y)
-        self.walls = self.level_manager.create_current_walls()
+        self.player.set_camera_offset(self.camera.offset_y)
+        self.player.sync_world_position()
 
     def change_level(self, direction):
         """Change levels and reload the current level when possible."""
+        if self.camera.transitioning:
+            return
+
         previous_x = self.player.x
 
         if direction == 1:
@@ -106,6 +133,74 @@ class PlatformerGame(arcade.Window):
         else:
             # Stay safely inside the current level at its starting position.
             self.load_current_level()
+
+    def transition_to_adjacent_level(self, direction):
+        """Move into the neighboring screen without resetting the player."""
+        if self.camera.transitioning:
+            return
+
+        old_platforms = self.platforms
+        old_walls = self.walls
+        old_slopes = self.slopes
+
+        if direction == 1:
+            level_changed = self.level_manager.next_level()
+        else:
+            level_changed = self.level_manager.previous_level()
+
+        if not level_changed:
+            current_level = self.level_manager.current_level
+            if direction == 1:
+                self.player.y = (
+                    current_level.world_offset_y
+                    + SCREEN_HEIGHT
+                    - self.player.height / 2
+                )
+            else:
+                # Level 1 has no lower screen to receive the fall. Return to
+                # its actual starting platform instead of preserving an x
+                # position that may be outside the platform's bounds.
+                self.player.x = current_level.start_x
+                self.player.y = (
+                    current_level.world_offset_y
+                    + current_level.start_y
+                )
+            self.player.velocity_y = 0
+            self.player.on_ground = True
+            return
+
+        self.previous_platforms = old_platforms
+        self.previous_walls = old_walls
+        self.previous_slopes = old_slopes
+        self.load_level_objects()
+        self.particles.clear()
+
+        if direction == 1 and self.platforms:
+            # The first platform is the shared arrival landing between
+            # screens. Place the player on its top during the camera slide so
+            # full collision does not trap them against its underside.
+            arrival_platform = self.platforms[0]
+            overlaps_arrival = (
+                self.player.right > arrival_platform.left
+                and self.player.left < arrival_platform.right
+            )
+            if overlaps_arrival:
+                self.player.land_on(arrival_platform.top)
+
+        self.camera.start_transition(
+            self.level_manager.current_level.level_index
+        )
+        self.player.set_camera_offset(self.camera.offset_y)
+
+    def update_camera_transition(self, delta_time):
+        """Advance a screen slide and clear the old screen when complete."""
+        finished = self.camera.update(delta_time)
+        self.player.set_camera_offset(self.camera.offset_y)
+        if finished:
+            self.previous_platforms = []
+            self.previous_walls = []
+            self.previous_slopes = []
+        return finished
 
     def on_key_press(self, key, modifiers):
         """Send key-press actions to the player."""
@@ -294,6 +389,10 @@ class PlatformerGame(arcade.Window):
         self.particles.update(delta_time)
         self.slide_particle_timer -= delta_time
 
+        if self.camera.transitioning:
+            self.update_camera_transition(delta_time)
+            return
+
         was_on_ground = self.player.on_ground
 
         # Remember the platform carrying the player before platforms move.
@@ -372,21 +471,37 @@ class PlatformerGame(arcade.Window):
             )
             self.slide_particle_timer = 0.1
 
-        if self.player.top < 0:
-            self.change_level(-1)
+        current_level = self.level_manager.current_level
+        level_bottom = current_level.world_offset_y
+        level_top = level_bottom + SCREEN_HEIGHT
 
-        elif self.player.bottom > SCREEN_HEIGHT:
-            self.change_level(1)
+        if self.player.top < level_bottom:
+            self.transition_to_adjacent_level(-1)
+
+        elif self.player.bottom > level_top:
+            self.transition_to_adjacent_level(1)
 
         else:
-            self.player.sync_world_position(self.level_manager.current_world_offset_y)
+            self.player.sync_world_position()
 
     def on_draw(self):
         """Draw all game objects."""
+        self.camera.use_screen()
         self.clear()
 
         self.background_renderer.draw(self.level_manager.current_level_number)
         self.structure_renderer.draw(self.level_manager.current_level_number)
+
+        self.camera.use_world()
+
+        for wall in self.previous_walls:
+            wall.draw()
+
+        for slope in self.previous_slopes:
+            slope.draw()
+
+        for platform in self.previous_platforms:
+            platform.draw()
 
         for wall in self.walls:
             wall.draw()
@@ -399,6 +514,8 @@ class PlatformerGame(arcade.Window):
 
         self.particles.draw()
         self.player.draw()
+
+        self.camera.use_screen()
         self.draw_hud()
 
     def draw_hud(self):

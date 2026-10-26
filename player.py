@@ -60,6 +60,7 @@ class Player:
         self.slope_sliding = False
         self.mouse_x = self.x
         self.mouse_y = self.y + 100
+        self.camera_offset_y = 0
 
     @property
     def left(self):
@@ -128,7 +129,8 @@ class Player:
     def get_jump_angle(self):
         """Return an upward launch angle based on the mouse position."""
         change_x = self.mouse_x - self.x
-        change_y = self.mouse_y - self.y
+        screen_y = self.y - self.camera_offset_y
+        change_y = self.mouse_y - screen_y
 
         if abs(change_x) <= VERTICAL_AIM_TOLERANCE and change_y > 0:
             return math.pi / 2
@@ -290,9 +292,13 @@ class Player:
         self.jump_keys_held.clear()
         self.jump_charge = 0
 
-    def sync_world_position(self, level_offset_y):
-        """Update world-space height from the current screen-space height."""
-        self.world_y = self.y + level_offset_y
+    def set_camera_offset(self, offset_y):
+        """Tell the player where the camera currently views the world."""
+        self.camera_offset_y = offset_y
+
+    def sync_world_position(self, level_offset_y=0):
+        """Keep the compatibility world-position value synced to physics."""
+        self.world_y = self.y
 
     def draw(self):
         """Draw the player as a small expressive explorer character."""
