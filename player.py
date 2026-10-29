@@ -61,6 +61,9 @@ class Player:
         self.mouse_x = self.x
         self.mouse_y = self.y + 100
         self.camera_offset_y = 0
+        self.mouse_sensitivity = 1.0
+        self.invert_mouse = False
+        self.show_power_bar = True
 
     @property
     def left(self):
@@ -118,19 +121,29 @@ class Player:
             self.on_ground = False
             self.current_slope = None
             self.slope_sliding = False
+            return True
         elif not self.on_ground:
             self.jump_charge = 0
+
+        return False
 
     def set_mouse_position(self, mouse_x, mouse_y):
         """Remember the mouse position used to aim the next jump."""
         self.mouse_x = mouse_x
         self.mouse_y = mouse_y
 
+    def set_aim_settings(self, sensitivity, invert_mouse):
+        """Apply the player's mouse aiming preferences."""
+        self.mouse_sensitivity = sensitivity
+        self.invert_mouse = invert_mouse
+
     def get_jump_angle(self):
         """Return an upward launch angle based on the mouse position."""
         change_x = self.mouse_x - self.x
         screen_y = self.y - self.camera_offset_y
         change_y = self.mouse_y - screen_y
+        if self.invert_mouse:
+            change_y *= -1
 
         if abs(change_x) <= VERTICAL_AIM_TOLERANCE and change_y > 0:
             return math.pi / 2
@@ -139,13 +152,16 @@ class Player:
         # launch-angle changes. Downward cursor positions are clamped to the
         # shallowest upward angle instead of allowing downward jumps.
         if change_y <= 0:
-            raw_angle = (
-                0
-                if change_x > 0
-                else math.pi
-            )
+            if abs(change_x) <= VERTICAL_AIM_TOLERANCE:
+                raw_angle = math.pi / 2
+            else:
+                raw_angle = 0 if change_x > 0 else math.pi
         else:
             raw_angle = math.atan2(change_y, change_x)
+
+        # Sensitivity changes how far the cursor moves the aim away from
+        # straight up while preserving the player's fine angle control.
+        raw_angle = math.pi / 2 + (raw_angle - math.pi / 2) * self.mouse_sensitivity
 
         minimum_angle = math.radians(MIN_JUMP_ANGLE_DEGREES)
         maximum_angle = math.radians(MAX_JUMP_ANGLE_DEGREES)
@@ -391,7 +407,7 @@ class Player:
 
         # Show the power bar only while a jump is being prepared. Keeping it
         # contextual preserves the player's focus on the landing geometry.
-        if self.jump_charge > 0 or self.jump_keys_held:
+        if self.show_power_bar and (self.jump_charge > 0 or self.jump_keys_held):
             bar_left = self.x - JUMP_BAR_WIDTH / 2
             bar_bottom = self.bottom - JUMP_BAR_GAP - JUMP_BAR_HEIGHT
             arcade.draw_lbwh_rectangle_filled(

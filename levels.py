@@ -26,30 +26,37 @@ def make_level(platform_data, level_index, wall_data=None, slope_data=None):
 def create_levels():
     """Return all ten levels in increasing difficulty order."""
     level_one = [
-        # Level 1 introduces the tower spine with broad landings and one
-        # gentle return through the upper window.
-        {"center_x": 400, "center_y": 70, "width": 210, "height": 12},
-        {"center_x": 350, "center_y": 155, "width": 110, "height": 12},
-        {"center_x": 520, "center_y": 245, "width": 100, "height": 12},
-        {"center_x": 610, "center_y": 320, "width": 90, "height": 11},
-        {"center_x": 500, "center_y": 395, "width": 90, "height": 11},
-        {"center_x": 620, "center_y": 445, "width": 70, "height": 11},
-        # This platform matches level 2's first platform.
-        {"center_x": 680, "center_y": 550, "width": 65, "height": 11},
+        # Level 1 teaches the basic rhythm: short setup, committed transfer,
+        # reverse direction, then a calm approach to the level seam.
+        # The climb begins on a left-side entry ledge, supported by the
+        # buttress below it rather than sitting on a generic floor.
+        {"center_x": 220, "center_y": 64, "width": 140, "height": 12},
+        {"center_x": 350, "center_y": 155, "width": 140, "height": 12},
+        {"center_x": 520, "center_y": 250, "width": 120, "height": 12},
+        {"center_x": 650, "center_y": 350, "width": 110, "height": 11},
+        {"center_x": 520, "center_y": 445, "width": 110, "height": 11},
+        # This platform matches level 2's first platform exactly.
+        {"center_x": 680, "center_y": 550, "width": 80, "height": 11},
     ]
 
     level_one_walls = [
-        # One central wall spine runs through the whole tower. These openings
-        # are wide and forgiving so Level 1 teaches the barrier language.
+        # Level 1 teaches the wall language with one long, low gate. The
+        # player must cross beneath it before climbing onto the right side.
         {
             "center_x": 430,
             "width": 32,
-            "openings": [(0, 175), (195, 265), (350, 500)],
-            "segment_offsets": [0, 10, -7],
-            "segment_widths": [44, 28, 38],
-            "cross_braces": [
-                {"center_x": 190, "center_y": 220, "width": 220, "height": 12},
-            ],
+            "openings": [(0, 300)],
+            "segment_offsets": [0],
+            "segment_widths": [46],
+            "cross_braces": [],
+        },
+        {
+            # This support meets the entry ledge at its left edge and runs to
+            # the bottom of the room, making the starting space architectural.
+            "center_x": 135,
+            "center_y": 29,
+            "width": 30,
+            "height": 58,
         },
     ]
 
@@ -57,215 +64,149 @@ def create_levels():
     level_one_slopes = []
 
     level_two = [
-        # Level 2 makes the first meaningful wall-window transfer: right,
-        # through the center, left, then back through the upper window.
+        # Level 2 keeps the seam landing from Level 1, then introduces one
+        # moving setup, a controlled drop, and a wide return.
         {"center_x": 680, "center_y": 70, "width": 80, "height": 11},
-        {"center_x": 600, "center_y": 150, "width": 70, "height": 11},
+        {"center_x": 590, "center_y": 155, "width": 85, "height": 11},
         {
             "center_x": 500,
-            "center_y": 230,
-            "width": 58,
+            "center_y": 240,
+            "width": 65,
             "height": 11,
             "movement_range_x": 30,
             "speed": 0.42,
         },
-        {"center_x": 340, "center_y": 190, "width": 52, "height": 10},
-        {"center_x": 280, "center_y": 310, "width": 48, "height": 10},
-        # A central staging landing turns the long lower transfer into two
-        # readable jumps through the same wall window.
-        {"center_x": 400, "center_y": 350, "width": 42, "height": 10},
-        {
-            "center_x": 520,
-            "center_y": 390,
-            "width": 44,
-            "height": 10,
-            "movement_range_x": 28,
-            "speed": 0.4,
-        },
-        {"center_x": 550, "center_y": 470, "width": 44, "height": 10},
-        {"center_x": 350, "center_y": 500, "width": 50, "height": 10},
+        {"center_x": 350, "center_y": 190, "width": 65, "height": 10},
+        {"center_x": 270, "center_y": 315, "width": 65, "height": 10},
+        # This landing is the recovery point after the first leftward
+        # transfer and sets up the return through the upper opening.
+        {"center_x": 500, "center_y": 410, "width": 65, "height": 10},
+        {"center_x": 360, "center_y": 500, "width": 65, "height": 10},
         # This platform matches level 3's first platform.
         {"center_x": 180, "center_y": 550, "width": 65, "height": 11},
     ]
 
     level_two_walls = [
-        # The spine drifts right and thickens. The upper window is the only
-        # route back into the left chamber.
+        # Two deliberate windows divide the route into three chambers. The
+        # player crosses right-to-left through the lower window, then
+        # left-to-right and right-to-left through the upper window.
         {
-            "center_x": 460,
+            "center_x": 430,
             "width": 38,
-            "openings": [(145, 265), (360, 520)],
-            "segment_offsets": [-8, 9],
-            "segment_widths": [48, 34],
-            "cross_braces": [
-                {"center_x": 180, "center_y": 270, "width": 220, "height": 12},
-                {"center_x": 635, "center_y": 425, "width": 200, "height": 12},
-            ],
+            "openings": [(120, 250), (300, 560)],
+            "segment_offsets": [0, -8, 8],
+            "segment_widths": [52, 38, 46],
+            "cross_braces": [],
         },
     ]
 
-    level_two_slopes = [
-        # This downhill-left slope is the intentional dip from P4 to P5.
-        {"start_x": 430, "start_y": 215, "end_x": 380, "end_y": 170},
-    ]
+    level_two_slopes = []
 
     level_three = [
-        # Level 3 crosses the drifting spine three times, with lower windows
-        # requiring the player to reverse before the next landing.
+        # Level 3 introduces longer transfers and one moving landing.
         {"center_x": 180, "center_y": 70, "width": 65, "height": 11},
-        {"center_x": 90, "center_y": 150, "width": 62, "height": 11},
+        {"center_x": 90, "center_y": 160, "width": 70, "height": 11},
         {
-            "center_x": 260,
-            "center_y": 100,
-            "width": 50,
+            "center_x": 280,
+            "center_y": 260,
+            "width": 60,
             "height": 10,
             "movement_range_x": 34,
-            "speed": 0.45,
-        },
-        {"center_x": 350, "center_y": 220, "width": 46, "height": 10},
-        {"center_x": 520, "center_y": 170, "width": 42, "height": 10},
-        {
-            "center_x": 470,
-            "center_y": 300,
-            "width": 38,
-            "height": 10,
-            "movement_range_x": 25,
             "speed": 0.4,
         },
-        {"center_x": 330, "center_y": 360, "width": 36, "height": 10},
-        {"center_x": 500, "center_y": 400, "width": 34, "height": 10},
-        # A high-right setup landing makes the final transfer a continuation
-        # of the window route instead of an isolated maximum-distance jump.
-        {"center_x": 620, "center_y": 480, "width": 30, "height": 10},
+        {"center_x": 470, "center_y": 350, "width": 55, "height": 10},
+        {"center_x": 620, "center_y": 440, "width": 50, "height": 10},
+        {"center_x": 670, "center_y": 500, "width": 40, "height": 10},
         # This platform matches level 4's first platform.
         {"center_x": 720, "center_y": 550, "width": 55, "height": 11},
     ]
 
     level_three_walls = [
-        # The spine bends left and uses two lower windows plus a high return.
+        # The solid spine closes the lower and upper shortcuts, leaving one
+        # mid-height window for the level's single chamber crossing.
         {
             "center_x": 410,
-            "width": 34,
-            "openings": [(120, 230), (250, 330), (350, 430)],
-            "segment_offsets": [10, -8, 12],
-            "segment_widths": [42, 28, 38],
-            "cross_braces": [
-                {"center_x": 180, "center_y": 275, "width": 220, "height": 12},
-                {"center_x": 630, "center_y": 335, "width": 220, "height": 12},
-            ],
+            "width": 42,
+            "openings": [(250, 380)],
+            "segment_offsets": [8, -6],
+            "segment_widths": [48, 38],
+            "cross_braces": [],
         },
     ]
 
-    # Level 3 deliberately removes slopes so moving platforms are the only
-    # new focus after the level-two slope lesson.
+    # Level 3 deliberately keeps the focus on moving platforms and walls.
     level_three_slopes = []
 
     level_four = [
-        # Level 4 is a split-shaft lesson: the player crosses the wall near
-        # the moving platform, then uses the slope to return through a low gap.
+        # Level 4 turns the direction around and asks for longer leftward
+        # transfers before the route settles at the next seam.
         {"center_x": 720, "center_y": 70, "width": 55, "height": 11},
-        {"center_x": 620, "center_y": 160, "width": 48, "height": 10},
+        {"center_x": 600, "center_y": 160, "width": 55, "height": 10},
         {
-            "center_x": 480,
-            "center_y": 110,
-            "width": 42,
+            "center_x": 450,
+            "center_y": 250,
+            "width": 52,
             "height": 10,
-            "movement_range_y": 24,
+            "movement_range_x": 30,
             "speed": 0.4,
         },
-        {"center_x": 530, "center_y": 250, "width": 42, "height": 10},
-        # This small landing sits above the lower window and sets up the
-        # slope's leftward momentum transfer.
-        {"center_x": 470, "center_y": 300, "width": 32, "height": 10},
-        {"center_x": 350, "center_y": 390, "width": 42, "height": 10},
-        {
-            "center_x": 260,
-            "center_y": 300,
-            "width": 34,
-            "height": 10,
-            "movement_range_x": 24,
-            "speed": 0.4,
-        },
-        {"center_x": 220, "center_y": 430, "width": 34, "height": 10},
+        {"center_x": 330, "center_y": 350, "width": 50, "height": 10},
+        {"center_x": 220, "center_y": 445, "width": 48, "height": 10},
+        {"center_x": 360, "center_y": 500, "width": 40, "height": 10},
         # This platform matches level 5's first platform.
         {"center_x": 180, "center_y": 550, "width": 50, "height": 11},
     ]
 
     level_four_walls = [
-        # The spine drifts right and its lower window aligns with the slope.
-        {
-            "center_x": 455,
-            "width": 42,
-            "openings": [(70, 150), (260, 360), (400, 500)],
-            "segment_offsets": [-10, 8, 12],
-            "segment_widths": [50, 34, 44],
-            "cross_braces": [
-                {"center_x": 635, "center_y": 205, "width": 220, "height": 12},
-                {"center_x": 190, "center_y": 350, "width": 220, "height": 12},
-            ],
-        },
-    ]
-
-    level_four_slopes = [
-        # This uphill-left slope is the bridge from the low reset to P5.
-        {"start_x": 430, "start_y": 285, "end_x": 350, "end_y": 370},
-    ]
-
-    level_five = [
-        # Level 5 creates two opposing chambers connected by staggered
-        # windows, with a moving platform guarding the upper return.
-        {"center_x": 180, "center_y": 70, "width": 50, "height": 11},
-        {"center_x": 300, "center_y": 155, "width": 46, "height": 10},
-        # A center landing teaches the first window crossing before the
-        # moving platform asks for timing.
-        {"center_x": 400, "center_y": 105, "width": 38, "height": 10},
+        # This gate sits between the opening right chamber and the left
+        # route. Its single window makes the first transfer a clear choice.
         {
             "center_x": 520,
-            "center_y": 100,
-            "width": 42,
+            "width": 50,
+            "openings": [(120, 300)],
+            "segment_offsets": [0, -8],
+            "segment_widths": [56, 44],
+            "cross_braces": [],
+        },
+    ]
+
+    level_four_slopes = []
+
+    level_five = [
+        # Level 5 adds longer reversals and one moving landing.
+        {"center_x": 180, "center_y": 70, "width": 50, "height": 11},
+        {
+            "center_x": 320,
+            "center_y": 165,
+            "width": 50,
             "height": 10,
-            "movement_range_x": 28,
+        },
+        {
+            "center_x": 500,
+            "center_y": 270,
+            "width": 50,
+            "height": 10,
+            "movement_range_x": 35,
             "speed": 0.42,
         },
-        {
-            "center_x": 360,
-            "center_y": 250,
-            "width": 40,
-            "height": 10,
-            "movement_range_x": 30,
-            "speed": 0.45,
-        },
-        {"center_x": 220, "center_y": 180, "width": 48, "height": 10},
-        {"center_x": 350, "center_y": 340, "width": 36, "height": 10},
-        # This reset landing separates the lower return from the next
-        # moving-platform transfer.
-        {"center_x": 390, "center_y": 370, "width": 36, "height": 10},
-        {
-            "center_x": 550,
-            "center_y": 300,
-            "width": 34,
-            "height": 10,
-            "movement_range_x": 28,
-            "speed": 0.4,
-        },
-        {"center_x": 640, "center_y": 430, "width": 34, "height": 10},
+        {"center_x": 640, "center_y": 370, "width": 46, "height": 10},
+        {"center_x": 520, "center_y": 460, "width": 44, "height": 10},
+        {"center_x": 360, "center_y": 515, "width": 46, "height": 10},
+        {"center_x": 520, "center_y": 520, "width": 44, "height": 10},
         # This platform matches level 6's first platform.
         {"center_x": 700, "center_y": 550, "width": 45, "height": 11},
     ]
 
     level_five_walls = [
-        # The spine bends left; its different segment thicknesses make the
-        # lower return feel like a reinforced maintenance section.
+        # The two windows separate the first rightward transfer from the
+        # late return. The solid middle span makes the reversal intentional.
         {
             "center_x": 430,
-            "width": 34,
-            "openings": [(80, 190), (260, 360), (420, 500)],
-            "segment_offsets": [8, -10, 7],
-            "segment_widths": [46, 30, 40],
-            "cross_braces": [
-                {"center_x": 175, "center_y": 245, "width": 210, "height": 12},
-                {"center_x": 635, "center_y": 355, "width": 200, "height": 12},
-            ],
+            "width": 46,
+            "openings": [(170, 330), (430, 550)],
+            "segment_offsets": [0, 8, -6],
+            "segment_widths": [52, 40, 48],
+            "cross_braces": [],
         },
     ]
 
@@ -274,278 +215,183 @@ def create_levels():
     level_five_slopes = []
 
     level_six = [
-        # Level 6 makes a wide rightward return through the second window,
-        # with the slope acting as a visible bridge toward that wall opening.
+        # Level 6 asks for a long leftward route, one moving landing, and a
+        # final reversal before the seam.
         {"center_x": 700, "center_y": 70, "width": 45, "height": 11},
-        {"center_x": 600, "center_y": 160, "width": 42, "height": 10},
+        {"center_x": 560, "center_y": 170, "width": 45, "height": 10},
         {
-            "center_x": 480,
-            "center_y": 105,
-            "width": 36,
+            "center_x": 400,
+            "center_y": 275,
+            "width": 45,
             "height": 10,
             "movement_range_x": 35,
-            "speed": 0.45,
+            "speed": 0.42,
         },
-        # This landing breaks the nearly maximum-height transfer into a
-        # controlled approach to the lower-left chamber.
-        {"center_x": 400, "center_y": 220, "width": 34, "height": 10},
-        {"center_x": 310, "center_y": 300, "width": 34, "height": 10},
-        {"center_x": 230, "center_y": 190, "width": 38, "height": 10},
-        # A middle landing makes the wide return to the upper-right mover a
-        # two-beat momentum challenge instead of one blind leap.
-        {"center_x": 350, "center_y": 270, "width": 34, "height": 10},
-        {
-            "center_x": 500,
-            "center_y": 360,
-            "width": 36,
-            "height": 10,
-            "movement_range_x": 30,
-            "speed": 0.4,
-        },
-        {"center_x": 390, "center_y": 330, "width": 34, "height": 10},
-        {"center_x": 270, "center_y": 300, "width": 32, "height": 10},
-        {"center_x": 180, "center_y": 450, "width": 32, "height": 10},
+        {"center_x": 250, "center_y": 370, "width": 42, "height": 10},
+        {"center_x": 380, "center_y": 450, "width": 40, "height": 10},
+        {"center_x": 520, "center_y": 510, "width": 40, "height": 10},
+        {"center_x": 350, "center_y": 530, "width": 40, "height": 10},
         # This platform matches level 7's first platform.
         {"center_x": 210, "center_y": 550, "width": 42, "height": 11},
     ]
 
     level_six_walls = [
-        # The spine shifts left and uses a broad lower window followed by a
-        # reinforced upper section.
+        # Two windows create a measured left chamber, right chamber, and a
+        # final return. The lower and middle wall spans block shortcuts.
         {
             "center_x": 405,
             "width": 46,
-            "openings": [(80, 380)],
-            "segment_offsets": [8, -10],
-            "segment_widths": [54, 36],
-            "cross_braces": [
-                {"center_x": 625, "center_y": 235, "width": 210, "height": 12},
-                {"center_x": 175, "center_y": 370, "width": 200, "height": 12},
-            ],
+            "openings": [(150, 340), (400, 560)],
+            "segment_offsets": [0, -8, 7],
+            "segment_widths": [52, 40, 48],
+            "cross_braces": [],
         },
     ]
 
-    level_six_slopes = [
-        # This short ramp gives the lower-left chamber a deliberate landing
-        # line without occupying either of its nearby platforms.
-        {"start_x": 205, "start_y": 205, "end_x": 300, "end_y": 280},
-    ]
+    level_six_slopes = []
 
     level_seven = [
-        # Level 7 uses the drifting spine as a window-to-window precision
-        # test while moving platforms control the timing on the right side.
+        # Level 7 uses tighter landings and a long final reversal.
         {"center_x": 210, "center_y": 70, "width": 42, "height": 11},
-        {"center_x": 350, "center_y": 160, "width": 38, "height": 10},
+        {"center_x": 360, "center_y": 165, "width": 42, "height": 10},
         {
-            "center_x": 520,
-            "center_y": 100,
-            "width": 34,
+            "center_x": 540,
+            "center_y": 270,
+            "width": 40,
             "height": 10,
             "movement_range_x": 40,
             "speed": 0.4,
         },
-        {"center_x": 390, "center_y": 250, "width": 32, "height": 10},
-        {"center_x": 540, "center_y": 180, "width": 30, "height": 10},
-        # The first decision landing interrupts the predictable rightward
-        # rhythm and gives the player a deliberate setup for the next jump.
-        {"center_x": 600, "center_y": 275, "width": 30, "height": 10},
-        {"center_x": 660, "center_y": 330, "width": 28, "height": 10},
-        {
-            "center_x": 540,
-            "center_y": 270,
-            "width": 28,
-            "height": 10,
-            "movement_range_x": 32,
-            "speed": 0.4,
-        },
-        {"center_x": 600, "center_y": 350, "width": 30, "height": 10},
-        {"center_x": 650, "center_y": 420, "width": 28, "height": 10},
+        {"center_x": 680, "center_y": 370, "width": 38, "height": 10},
+        {"center_x": 520, "center_y": 450, "width": 36, "height": 10},
+        {"center_x": 360, "center_y": 515, "width": 36, "height": 10},
+        {"center_x": 560, "center_y": 535, "width": 34, "height": 10},
         # This platform matches level 8's first platform.
         {"center_x": 720, "center_y": 550, "width": 38, "height": 11},
     ]
 
     level_seven_walls = [
-        # The spine drifts right and leaves a single tall window for the
-        # alternating left/right transfers.
+        # The windows line up with the three side changes in this route,
+        # while the intervening wall spans prevent straight-line shortcuts.
         {
             "center_x": 465,
-            "width": 32,
-            "openings": [(100, 280), (390, 500)],
-            "segment_offsets": [-8, 10],
-            "segment_widths": [42, 30],
-            "cross_braces": [
-                {"center_x": 180, "center_y": 300, "width": 220, "height": 12},
-                {"center_x": 645, "center_y": 245, "width": 240, "height": 12},
-            ],
+            "width": 42,
+            "openings": [(150, 320), (390, 560)],
+            "segment_offsets": [0, 8, -7],
+            "segment_widths": [48, 38, 44],
+            "cross_braces": [],
         },
     ]
 
-    # Level 7 is a slope-free precision section before the steep-slope test.
+    # Level 7 is a slope-free precision section with tighter platforms.
     level_seven_slopes = []
 
     level_eight = [
-        # Level 8 opens a second chamber on the right before the final
-        # leftward return, making the slope and the windows one challenge.
+        # Level 8 tightens the landing widths while keeping one moving
+        # platform as the only extra timing element.
         {"center_x": 720, "center_y": 70, "width": 38, "height": 11},
-        {"center_x": 640, "center_y": 160, "width": 35, "height": 10},
+        {"center_x": 600, "center_y": 165, "width": 40, "height": 10},
         {
-            "center_x": 520,
-            "center_y": 105,
-            "width": 32,
+            "center_x": 450,
+            "center_y": 270,
+            "width": 38,
             "height": 10,
-            "movement_range_x": 45,
+            "movement_range_x": 40,
             "speed": 0.4,
         },
-        {"center_x": 380, "center_y": 260, "width": 30, "height": 10},
-        {"center_x": 320, "center_y": 380, "width": 34, "height": 10},
-        {
-            "center_x": 220,
-            "center_y": 300,
-            "width": 29,
-            "height": 10,
-            "movement_range_x": 28,
-            "speed": 0.4,
-        },
-        # This landing receives the slope momentum before the player crosses
-        # the lower window into the right chamber.
-        {"center_x": 440, "center_y": 365, "width": 32, "height": 10},
-        {"center_x": 480, "center_y": 400, "width": 28, "height": 10},
-        # The recovery landing makes the final leftward transfer readable.
-        {"center_x": 390, "center_y": 450, "width": 30, "height": 10},
-        {"center_x": 300, "center_y": 480, "width": 30, "height": 10},
+        {"center_x": 300, "center_y": 370, "width": 36, "height": 10},
+        {"center_x": 450, "center_y": 455, "width": 34, "height": 10},
+        {"center_x": 600, "center_y": 515, "width": 34, "height": 10},
+        {"center_x": 330, "center_y": 535, "width": 34, "height": 10},
         # This platform matches level 9's first platform.
         {"center_x": 180, "center_y": 550, "width": 35, "height": 11},
     ]
 
     level_eight_walls = [
-        # The spine shifts left. A second upper window lets the player leave
-        # the right chamber before the final recovery landing.
+        # This offset spine forces the route to cross three intentional
+        # windows instead of letting the player drift through the middle.
         {
-            "center_x": 420,
-            "width": 40,
-            "openings": [(140, 300), (360, 500)],
-            "segment_offsets": [10, -8],
-            "segment_widths": [48, 34],
-            "cross_braces": [
-                {"center_x": 625, "center_y": 220, "width": 220, "height": 12},
-                {"center_x": 170, "center_y": 365, "width": 200, "height": 12},
-            ],
+            "center_x": 390,
+            "width": 48,
+            "openings": [(150, 440), (480, 560)],
+            "segment_offsets": [0, -8, 8],
+            "segment_widths": [54, 42, 50],
+            "cross_braces": [],
         },
     ]
 
-    level_eight_slopes = [
-        # A steep angle demands deliberate landing momentum and direction.
-        {"start_x": 365, "start_y": 300, "end_x": 305, "end_y": 365},
-    ]
+    level_eight_slopes = []
 
     level_nine = [
-        # Level 9 is a long precision route with a high return through a
-        # second window, rather than a single diagonal staircase.
+        # Level 9 uses narrow landings and long, deliberate reversals.
         {"center_x": 180, "center_y": 70, "width": 35, "height": 11},
-        {"center_x": 320, "center_y": 160, "width": 34, "height": 10},
+        {"center_x": 330, "center_y": 165, "width": 36, "height": 10},
         {
-            "center_x": 430,
-            "center_y": 100,
-            "width": 30,
+            "center_x": 500,
+            "center_y": 270,
+            "width": 36,
             "height": 10,
-            "movement_range_x": 55,
+            "movement_range_x": 50,
             "speed": 0.4,
         },
-        {"center_x": 340, "center_y": 250, "width": 28, "height": 10},
-        {"center_x": 500, "center_y": 180, "width": 27, "height": 10},
-        # This left-of-spine landing keeps the high return inside the lower
-        # window before the route turns toward the moving platform.
-        {"center_x": 400, "center_y": 240, "width": 28, "height": 10},
-        {"center_x": 360, "center_y": 380, "width": 26, "height": 10},
-        {"center_x": 500, "center_y": 430, "width": 30, "height": 10},
-        {
-            "center_x": 620,
-            "center_y": 300,
-            "width": 27,
-            "height": 10,
-            "movement_range_x": 30,
-            "speed": 0.4,
-        },
-        {"center_x": 680, "center_y": 430, "width": 26, "height": 10},
+        {"center_x": 650, "center_y": 370, "width": 34, "height": 10},
+        {"center_x": 500, "center_y": 455, "width": 34, "height": 10},
+        {"center_x": 350, "center_y": 520, "width": 34, "height": 10},
+        {"center_x": 520, "center_y": 535, "width": 32, "height": 10},
         # This platform matches level 10's first platform.
         {"center_x": 700, "center_y": 550, "width": 32, "height": 11},
     ]
 
     level_nine_walls = [
-        # The spine bends right and leaves a lower window plus a high return
-        # window for the final moving-platform transfer.
+        # The precision route crosses the lower and upper windows; the solid
+        # spans between them make each reversal a separate decision.
         {
-            "center_x": 450,
-            "width": 38,
-            "openings": [(70, 280), (350, 500)],
-            "segment_offsets": [-9, 10],
-            "segment_widths": [48, 34],
-            "cross_braces": [
-                {"center_x": 180, "center_y": 300, "width": 220, "height": 12},
-                {"center_x": 625, "center_y": 245, "width": 220, "height": 12},
-            ],
+            "center_x": 425,
+            "width": 42,
+            "openings": [(150, 320), (380, 580)],
+            "segment_offsets": [0, 8, -7],
+            "segment_widths": [48, 36, 44],
+            "cross_braces": [],
         },
     ]
 
     level_nine_slopes = []
 
     level_ten = [
-        # The summit is a compressed three-window sequence that ends in the
-        # final leftward transfer through the tower's last opening.
+        # The summit uses the narrowest platforms and the longest final
+        # transfer, without adding extra wall pieces.
         {"center_x": 700, "center_y": 70, "width": 32, "height": 11},
-        {"center_x": 590, "center_y": 160, "width": 32, "height": 10},
+        {"center_x": 560, "center_y": 165, "width": 34, "height": 10},
         {
-            "center_x": 480,
-            "center_y": 105,
-            "width": 28,
+            "center_x": 400,
+            "center_y": 270,
+            "width": 34,
             "height": 10,
-            "movement_range_x": 55,
+            "movement_range_x": 50,
             "speed": 0.4,
         },
-        # This landing is the final window-crossing checkpoint before the
-        # summit's tighter leftward route.
-        {"center_x": 400, "center_y": 170, "width": 28, "height": 10},
-        {"center_x": 340, "center_y": 270, "width": 27, "height": 10},
-        {"center_x": 280, "center_y": 390, "width": 26, "height": 10},
-        {
-            "center_x": 500,
-            "center_y": 360,
-            "width": 24,
-            "height": 10,
-            "movement_range_x": 24,
-            "speed": 0.4,
-        },
-        # A central recovery landing turns the long lower reversal into a
-        # readable two-stage approach to the final moving platform.
-        {"center_x": 380, "center_y": 330, "width": 28, "height": 10},
-        {"center_x": 250, "center_y": 400, "width": 24, "height": 10},
-        # The last small landing gives the player one controlled setup jump
-        # before the final platform and the next-level seam.
-        {"center_x": 180, "center_y": 480, "width": 28, "height": 10},
+        {"center_x": 250, "center_y": 380, "width": 32, "height": 10},
+        {"center_x": 400, "center_y": 465, "width": 30, "height": 10},
+        {"center_x": 560, "center_y": 520, "width": 30, "height": 10},
+        {"center_x": 370, "center_y": 540, "width": 30, "height": 10},
         # Final platform for the ten-level climb.
         {"center_x": 120, "center_y": 550, "width": 30, "height": 11},
     ]
 
     level_ten_walls = [
-        # The summit spine shifts left and changes thickness at each window.
+        # The summit has two narrow windows. The upper span closes the easy
+        # center line and makes the final return a deliberate commitment.
         {
             "center_x": 420,
             "width": 44,
-            "openings": [(80, 190), (250, 380), (450, 540)],
-            "segment_offsets": [10, -12, 8],
-            "segment_widths": [52, 34, 46],
-            "cross_braces": [
-                {"center_x": 620, "center_y": 225, "width": 240, "height": 12},
-                {"center_x": 170, "center_y": 440, "width": 190, "height": 12},
-            ],
+            "openings": [(150, 350), (400, 580)],
+            "segment_offsets": [0, -8, 7],
+            "segment_widths": [50, 38, 46],
+            "cross_braces": [],
         },
     ]
 
-    level_ten_slopes = [
-        # The final slope repeats the learned momentum redirect under
-        # tighter landing constraints.
-        {"start_x": 345, "start_y": 300, "end_x": 290, "end_y": 370},
-    ]
+    level_ten_slopes = []
 
     return [
         make_level(level_one, 0, level_one_walls, level_one_slopes),

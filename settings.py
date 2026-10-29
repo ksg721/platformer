@@ -22,6 +22,9 @@ PLAYER_HEIGHT = 15
 ACCELERATION = 0.4
 MAX_SPEED = 4
 FRICTION = 0.8
+# A small horizontal rebound makes side impacts readable without disrupting
+# the player's committed Jump King-style trajectory.
+WALL_BOUNCE_FACTOR = 0.35
 GRAVITY = 0.7
 MIN_JUMP_SPEED = 7
 # A full charge takes about 34 frames at 60 FPS. This gives the player a

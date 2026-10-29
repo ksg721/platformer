@@ -17,8 +17,54 @@ class Camera:
         self.offset_y = 0
         self.target_offset_y = 0
         self.transitioning = False
+        self.reduced_motion = False
         self.world_camera = arcade.Camera2D()
         self.screen_camera = arcade.Camera2D()
+        self.resize(SCREEN_WIDTH, SCREEN_HEIGHT)
+
+    def resize(self, window_width, window_height):
+        """Fit the fixed game layout into the window with centered letterboxing."""
+        virtual_aspect = SCREEN_WIDTH / SCREEN_HEIGHT
+        window_aspect = window_width / max(1, window_height)
+
+        if window_aspect >= virtual_aspect:
+            viewport_height = window_height
+            viewport_width = window_height * virtual_aspect
+        else:
+            viewport_width = window_width
+            viewport_height = window_width / virtual_aspect
+
+        viewport_left = (window_width - viewport_width) / 2
+        viewport_bottom = (window_height - viewport_height) / 2
+        viewport = arcade.LBWH(
+            viewport_left,
+            viewport_bottom,
+            viewport_width,
+            viewport_height,
+        )
+        projection = arcade.LRBT(
+            -SCREEN_WIDTH / 2,
+            SCREEN_WIDTH / 2,
+            -SCREEN_HEIGHT / 2,
+            SCREEN_HEIGHT / 2,
+        )
+
+        self.world_camera.viewport = viewport
+        self.world_camera.projection = projection
+        self.screen_camera.viewport = viewport
+        self.screen_camera.projection = projection
+
+    def window_to_virtual(self, window_x, window_y):
+        """Convert a physical window coordinate into game-space coordinates."""
+        viewport = self.screen_camera.viewport
+        inside_viewport = (
+            viewport.left <= window_x <= viewport.right
+            and viewport.bottom <= window_y <= viewport.top
+        )
+        scale = viewport.width / SCREEN_WIDTH
+        virtual_x = (window_x - viewport.left) / scale
+        virtual_y = (window_y - viewport.bottom) / scale
+        return virtual_x, virtual_y, inside_viewport
 
     def set_level(self, level_index, immediate=True):
         """Point the camera at a level, optionally without animation."""
@@ -30,6 +76,10 @@ class Camera:
     def start_transition(self, level_index):
         """Begin sliding the camera toward another stacked level."""
         self.target_offset_y = level_index * LEVEL_HEIGHT
+        if self.reduced_motion:
+            self.offset_y = self.target_offset_y
+            self.transitioning = False
+            return
         self.transitioning = True
 
     def update(self, delta_time):

@@ -324,6 +324,7 @@ class ParticleSystem:
 
     def __init__(self):
         self.particles = []
+        self.enabled = True
 
     def clear(self):
         """Remove particles when a new level is loaded."""
@@ -344,6 +345,8 @@ class ParticleSystem:
 
     def emit_jump(self, x, y):
         """Emit a small burst below the player when a jump begins."""
+        if not self.enabled:
+            return
         for index in range(5):
             direction = -1 if index % 2 else 1
             self.particles.append(
@@ -360,6 +363,8 @@ class ParticleSystem:
 
     def emit_landing(self, x, y, impact_speed):
         """Emit dust outward from a landing, scaled by impact speed."""
+        if not self.enabled:
+            return
         count = min(10, 4 + int(abs(impact_speed) / 2))
         for index in range(count):
             direction = -1 if index % 2 else 1
@@ -377,6 +382,8 @@ class ParticleSystem:
 
     def emit_slide(self, x, y, direction):
         """Emit a short trail while the player is actively sliding."""
+        if not self.enabled:
+            return
         self.particles.append(
             Particle(
                 x - direction * 5,
