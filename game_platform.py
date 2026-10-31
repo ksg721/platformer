@@ -58,15 +58,6 @@ class Platform:
         """Return the platform's top edge."""
         return self.center_y + self.height / 2
 
-    def overlaps_rect(self, left, right, bottom, top):
-        """Return whether this platform overlaps another rectangle."""
-        return (
-            self.left < right
-            and self.right > left
-            and self.bottom < top
-            and self.top > bottom
-        )
-
     def update(self, blockers=None):
         """Move without passing through walls or other platforms."""
         movement_x = 0

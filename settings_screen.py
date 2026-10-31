@@ -12,11 +12,13 @@ class SettingsScreen:
         ("fullscreen", "DISPLAY MODE"),
         ("mouse_sensitivity", "MOUSE AIM SENSITIVITY"),
         ("invert_mouse", "INVERT VERTICAL AIM"),
-        ("show_hud", "SHOW HUD STATISTICS"),
+        ("show_hud", "SHOW GAME HUD"),
         ("show_power_bar", "SHOW JUMP POWER BAR"),
         ("reduced_effects", "REDUCED VISUAL EFFECTS"),
         ("reduced_camera_motion", "REDUCED CAMERA MOTION"),
         ("show_control_hints", "SHOW CONTROL HINTS"),
+        ("music_enabled", "BACKGROUND MUSIC"),
+        ("sound_effects_enabled", "SOUND EFFECTS"),
     )
 
     def __init__(self, screen_width, screen_height, settings_store):
@@ -136,12 +138,12 @@ class SettingsScreen:
     @staticmethod
     def row_bottom(row_index):
         """Return the bottom edge of one settings row."""
-        return 442 - row_index * 40
+        return 438 - row_index * 32
 
     @staticmethod
     def row_height():
         """Return the height of one settings row."""
-        return 34
+        return 30
 
     def show(self):
         """Make the settings screen visible."""

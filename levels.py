@@ -4,7 +4,7 @@ from level import Level
 from settings import PLAYER_HEIGHT
 
 
-def make_level(platform_data, level_index, wall_data=None, slope_data=None):
+def make_level(platform_data, level_index, wall_data=None):
     """Create a Level using its first platform as the starting platform."""
     starting_platform = platform_data[0]
     start_y = (
@@ -19,7 +19,6 @@ def make_level(platform_data, level_index, wall_data=None, slope_data=None):
         start_y=start_y,
         level_index=level_index,
         wall_data=wall_data,
-        slope_data=slope_data,
     )
 
 
@@ -60,9 +59,6 @@ def create_levels():
         },
     ]
 
-    # Level 1 intentionally has no slopes.
-    level_one_slopes = []
-
     level_two = [
         # Level 2 keeps the seam landing from Level 1, then introduces one
         # moving setup, a controlled drop, and a wide return.
@@ -100,8 +96,6 @@ def create_levels():
         },
     ]
 
-    level_two_slopes = []
-
     level_three = [
         # Level 3 introduces longer transfers and one moving landing.
         {"center_x": 180, "center_y": 70, "width": 65, "height": 11},
@@ -133,9 +127,6 @@ def create_levels():
             "cross_braces": [],
         },
     ]
-
-    # Level 3 deliberately keeps the focus on moving platforms and walls.
-    level_three_slopes = []
 
     level_four = [
         # Level 4 turns the direction around and asks for longer leftward
@@ -169,8 +160,6 @@ def create_levels():
             "cross_braces": [],
         },
     ]
-
-    level_four_slopes = []
 
     level_five = [
         # Level 5 adds longer reversals and one moving landing.
@@ -210,10 +199,6 @@ def create_levels():
         },
     ]
 
-    # Level 5 reinforces walls and moving-platform timing without adding a
-    # new slope challenge.
-    level_five_slopes = []
-
     level_six = [
         # Level 6 asks for a long leftward route, one moving landing, and a
         # final reversal before the seam.
@@ -248,8 +233,6 @@ def create_levels():
         },
     ]
 
-    level_six_slopes = []
-
     level_seven = [
         # Level 7 uses tighter landings and a long final reversal.
         {"center_x": 210, "center_y": 70, "width": 42, "height": 11},
@@ -282,9 +265,6 @@ def create_levels():
             "cross_braces": [],
         },
     ]
-
-    # Level 7 is a slope-free precision section with tighter platforms.
-    level_seven_slopes = []
 
     level_eight = [
         # Level 8 tightens the landing widths while keeping one moving
@@ -320,8 +300,6 @@ def create_levels():
         },
     ]
 
-    level_eight_slopes = []
-
     level_nine = [
         # Level 9 uses narrow landings and long, deliberate reversals.
         {"center_x": 180, "center_y": 70, "width": 35, "height": 11},
@@ -354,8 +332,6 @@ def create_levels():
             "cross_braces": [],
         },
     ]
-
-    level_nine_slopes = []
 
     level_ten = [
         # The summit uses the narrowest platforms and the longest final
@@ -391,17 +367,15 @@ def create_levels():
         },
     ]
 
-    level_ten_slopes = []
-
     return [
-        make_level(level_one, 0, level_one_walls, level_one_slopes),
-        make_level(level_two, 1, level_two_walls, level_two_slopes),
-        make_level(level_three, 2, level_three_walls, level_three_slopes),
-        make_level(level_four, 3, level_four_walls, level_four_slopes),
-        make_level(level_five, 4, level_five_walls, level_five_slopes),
-        make_level(level_six, 5, level_six_walls, level_six_slopes),
-        make_level(level_seven, 6, level_seven_walls, level_seven_slopes),
-        make_level(level_eight, 7, level_eight_walls, level_eight_slopes),
-        make_level(level_nine, 8, level_nine_walls, level_nine_slopes),
-        make_level(level_ten, 9, level_ten_walls, level_ten_slopes),
+        make_level(level_one, 0, level_one_walls),
+        make_level(level_two, 1, level_two_walls),
+        make_level(level_three, 2, level_three_walls),
+        make_level(level_four, 3, level_four_walls),
+        make_level(level_five, 4, level_five_walls),
+        make_level(level_six, 5, level_six_walls),
+        make_level(level_seven, 6, level_seven_walls),
+        make_level(level_eight, 7, level_eight_walls),
+        make_level(level_nine, 8, level_nine_walls),
+        make_level(level_ten, 9, level_ten_walls),
     ]

@@ -112,11 +112,3 @@ class Camera:
             SCREEN_HEIGHT / 2,
         )
         self.screen_camera.use()
-
-    def world_to_screen_y(self, world_y):
-        """Convert a world-space y-coordinate to a screen-space coordinate."""
-        return world_y - self.offset_y
-
-    def screen_to_world_y(self, screen_y):
-        """Convert a screen-space y-coordinate to a world-space coordinate."""
-        return screen_y + self.offset_y

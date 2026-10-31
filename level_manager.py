@@ -32,11 +32,6 @@ class LevelManager:
         """Return the total number of available levels."""
         return len(self.levels)
 
-    @property
-    def current_world_offset_y(self):
-        """Return the current level's vertical world offset."""
-        return self.current_level.world_offset_y
-
     def create_current_platforms(self, world_coordinates=False):
         """Create platforms for the current level."""
         return self.current_level.create_platforms(world_coordinates)
@@ -44,10 +39,6 @@ class LevelManager:
     def create_current_walls(self, world_coordinates=False):
         """Create walls for the current level."""
         return self.current_level.create_walls(world_coordinates)
-
-    def create_current_slopes(self, world_coordinates=False):
-        """Create angled surfaces for the current level."""
-        return self.current_level.create_slopes(world_coordinates)
 
     def next_level(self):
         """Move to the next level if one exists.

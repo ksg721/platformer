@@ -2,6 +2,7 @@
 
 import arcade
 
+from audio_manager import AudioManager
 from camera import Camera
 from leaderboard import LeaderboardStore
 from leaderboard_screen import LeaderboardScreen
@@ -12,7 +13,6 @@ from player import Player
 from start_screen import StartScreen
 from settings import (
     BACKGROUND_COLOR,
-    GRAVITY,
     SCREEN_HEIGHT,
     SCREEN_TITLE,
     SCREEN_WIDTH,
@@ -37,14 +37,13 @@ class PlatformerGame(arcade.Window):
         self.platforms = []
         self.walls = []
         self.boundary_walls = []
-        self.slopes = []
         self.previous_platforms = []
         self.previous_walls = []
-        self.previous_slopes = []
         self.background_renderer = BackgroundRenderer()
         self.structure_renderer = StructureRenderer()
         self.particles = ParticleSystem()
-        self.slide_particle_timer = 0.0
+        self.audio = AudioManager()
+        self.wall_sound_cooldown = 0.0
         self.ignore_next_mouse_release = False
         self.elapsed_time = 0.0
         self.jump_count = 0
@@ -65,36 +64,103 @@ class PlatformerGame(arcade.Window):
         self.pause_screen = PauseScreen(SCREEN_WIDTH, SCREEN_HEIGHT)
         self.settings_return_to_pause = False
         self.leaderboard_return_to_win = False
-        self.title_text = arcade.Text(
-            "VERTICAL ASCENT",
-            26,
-            SCREEN_HEIGHT - 29,
-            (226, 246, 223),
-            10,
+        hud_label_color = (190, 216, 207)
+        hud_value_color = (245, 197, 103)
+        self.level_label_text = arcade.Text(
+            "LEVEL",
+            SCREEN_WIDTH - 28,
+            SCREEN_HEIGHT - 26,
+            hud_label_color,
+            6,
+            anchor_x="center",
             bold=True,
         )
         self.level_text = arcade.Text(
             "",
-            26,
-            SCREEN_HEIGHT - 43,
-            (245, 197, 103),
-            9,
+            SCREEN_WIDTH - 28,
+            SCREEN_HEIGHT - 44,
+            hud_value_color,
+            8,
+            anchor_x="center",
+            bold=True,
+        )
+        self.progress_label_text = arcade.Text(
+            "PROGRESS",
+            SCREEN_WIDTH - 28,
+            475,
+            hud_label_color,
+            6,
+            anchor_x="center",
             bold=True,
         )
         self.stats_text = arcade.Text(
             "",
-            220,
-            SCREEN_HEIGHT - 29,
-            (226, 246, 223),
-            9,
+            SCREEN_WIDTH - 28,
+            523,
+            hud_value_color,
+            8,
+            anchor_x="center",
+            bold=True,
+        )
+        self.time_label_text = arcade.Text(
+            "TIME",
+            SCREEN_WIDTH - 28,
+            539,
+            hud_label_color,
+            6,
+            anchor_x="center",
+            bold=True,
+        )
+        self.jumps_label_text = arcade.Text(
+            "JUMPS",
+            SCREEN_WIDTH - 28,
+            504,
+            hud_label_color,
+            6,
+            anchor_x="center",
+            bold=True,
+        )
+        self.jumps_text = arcade.Text(
+            "",
+            SCREEN_WIDTH - 28,
+            487,
+            hud_value_color,
+            8,
+            anchor_x="center",
+            bold=True,
+        )
+        self.move_label_text = arcade.Text(
+            "MOVE",
+            28,
+            545,
+            hud_label_color,
+            6,
+            anchor_x="center",
             bold=True,
         )
         self.controls_text = arcade.Text(
-            "A/D or ARROWS  MOVE     HOLD LEFT CLICK  AIM + CHARGE",
-            SCREEN_WIDTH / 2,
-            16,
-            (225, 236, 220, 190),
-            9,
+            "A/D",
+            28,
+            529,
+            (225, 236, 220, 220),
+            8,
+            anchor_x="center",
+        )
+        self.aim_label_text = arcade.Text(
+            "AIM",
+            28,
+            505,
+            hud_label_color,
+            6,
+            anchor_x="center",
+            bold=True,
+        )
+        self.aim_controls_text = arcade.Text(
+            "CLICK",
+            28,
+            489,
+            (225, 236, 220, 220),
+            7,
             anchor_x="center",
         )
         self.apply_settings()
@@ -102,6 +168,7 @@ class PlatformerGame(arcade.Window):
     def setup(self):
         """Create the player and the stationary platforms."""
         self.load_current_level()
+        self.audio.play_music("menu")
 
     def on_resize(self, width, height):
         """Keep the virtual 800x600 game centered after window resizing."""
@@ -114,9 +181,6 @@ class PlatformerGame(arcade.Window):
             world_coordinates=True
         )
         self.walls = self.level_manager.create_current_walls(
-            world_coordinates=True
-        )
-        self.slopes = self.level_manager.create_current_slopes(
             world_coordinates=True
         )
         self.boundary_walls = self.create_boundary_walls()
@@ -150,7 +214,6 @@ class PlatformerGame(arcade.Window):
         self.particles.clear()
         self.previous_platforms = []
         self.previous_walls = []
-        self.previous_slopes = []
         self.load_level_objects()
 
         if spawn_from_top:
@@ -177,7 +240,6 @@ class PlatformerGame(arcade.Window):
             self.player.y = current_level.world_offset_y + current_level.start_y
 
         self.player.set_camera_offset(self.camera.offset_y)
-        self.player.sync_world_position()
 
     def restart_game(self):
         """Return the player to Level 1 after completing the climb."""
@@ -192,9 +254,12 @@ class PlatformerGame(arcade.Window):
         self.settings_return_to_pause = False
         self.leaderboard_return_to_win = False
         self.load_current_level()
+        self.audio.play_music("menu")
 
     def start_game(self):
         """Hide the title screen and begin the timed climb."""
+        self.audio.play_effect("menu_click")
+        self.audio.play_music("gameplay")
         self.start_screen.hide()
         self.leaderboard_screen.hide()
         self.settings_screen.hide()
@@ -230,15 +295,20 @@ class PlatformerGame(arcade.Window):
         self.player.jump_keys_held.clear()
         self.player.jump_charge = 0
         self.pause_screen.show()
+        self.audio.play_effect("menu_click")
+        self.audio.pause_music()
 
     def resume_game(self):
         """Hide the pause menu and resume the active climb."""
         self.pause_screen.hide()
+        self.audio.play_effect("menu_click")
+        self.audio.resume_music()
 
     def restart_from_pause(self):
         """Restart the run immediately from the pause menu."""
         self.restart_game()
         self.start_screen.hide()
+        self.audio.play_music("gameplay")
 
     def exit_to_title(self):
         """Reset the current run and return to the title screen."""
@@ -246,6 +316,10 @@ class PlatformerGame(arcade.Window):
 
     def apply_settings(self, apply_display=True):
         """Apply saved preferences to the window and gameplay objects."""
+        self.audio.apply_settings(
+            self.settings_store.get("music_enabled"),
+            self.settings_store.get("sound_effects_enabled"),
+        )
         self.player.set_aim_settings(
             self.settings_store.get("mouse_sensitivity"),
             self.settings_store.get("invert_mouse"),
@@ -290,6 +364,7 @@ class PlatformerGame(arcade.Window):
 
     def open_leaderboard(self, return_to_win=False):
         """Show the leaderboard from either the title or win screen."""
+        self.audio.play_effect("menu_click")
         self.leaderboard_return_to_win = return_to_win
         if not return_to_win:
             self.start_screen.hide()
@@ -298,6 +373,7 @@ class PlatformerGame(arcade.Window):
 
     def close_leaderboard(self):
         """Return to the screen that opened the leaderboard."""
+        self.audio.play_effect("menu_click")
         self.leaderboard_screen.hide()
         if self.leaderboard_return_to_win:
             self.win_screen.visible = True
@@ -351,6 +427,8 @@ class PlatformerGame(arcade.Window):
             self.player.velocity_y = 0
             self.particles.clear()
             self.win_screen.show(self.elapsed_time, self.jump_count)
+            self.audio.stop_music()
+            self.audio.play_effect("summit")
 
     def change_level(self, direction):
         """Change levels and reload the current level when possible."""
@@ -370,8 +448,31 @@ class PlatformerGame(arcade.Window):
                 spawn_from_top=direction == -1,
             )
         else:
+            if (
+                direction == 1
+                and self.level_manager.current_level_number
+                == self.level_manager.total_levels
+            ):
+                self.move_to_final_platform()
+                return
+
             # Stay safely inside the current level at its starting position.
             self.load_current_level()
+
+    def move_to_final_platform(self):
+        """Place the player on Level 10's final platform for development."""
+        if not self.platforms:
+            return
+
+        final_platform = self.platforms[-1]
+        self.player.x = final_platform.center_x
+        self.player.land_on(final_platform.top)
+        self.player.velocity_x = 0
+        self.player.left_pressed = False
+        self.player.right_pressed = False
+        self.player.jump_keys_held.clear()
+        self.player.jump_charge = 0
+        self.particles.clear()
 
     def transition_to_adjacent_level(self, direction):
         """Move into the neighboring screen without resetting the player."""
@@ -380,7 +481,6 @@ class PlatformerGame(arcade.Window):
 
         old_platforms = self.platforms
         old_walls = self.walls
-        old_slopes = self.slopes
 
         if direction == 1:
             level_changed = self.level_manager.next_level()
@@ -410,7 +510,6 @@ class PlatformerGame(arcade.Window):
 
         self.previous_platforms = old_platforms
         self.previous_walls = old_walls
-        self.previous_slopes = old_slopes
         self.load_level_objects()
         self.particles.clear()
 
@@ -438,7 +537,6 @@ class PlatformerGame(arcade.Window):
         if finished:
             self.previous_platforms = []
             self.previous_walls = []
-            self.previous_slopes = []
         return finished
 
     def on_key_press(self, key, modifiers):
@@ -456,7 +554,9 @@ class PlatformerGame(arcade.Window):
             return
 
         if self.win_screen.visible:
-            if key == arcade.key.R:
+            if key == arcade.key.ESCAPE:
+                self.exit_to_title()
+            elif key == arcade.key.R and self.win_screen.score_saved:
                 self.restart_game()
             elif key == arcade.key.BACKSPACE:
                 self.win_screen.handle_backspace()
@@ -569,7 +669,10 @@ class PlatformerGame(arcade.Window):
                     self.ignore_next_mouse_release = True
                 return
             if self.win_screen.visible:
-                if self.win_screen.save_button_contains(virtual_x, virtual_y):
+                if self.win_screen.title_button_contains(virtual_x, virtual_y):
+                    self.exit_to_title()
+                    self.ignore_next_mouse_release = True
+                elif self.win_screen.save_button_contains(virtual_x, virtual_y):
                     if self.win_screen.score_saved:
                         self.open_leaderboard(return_to_win=True)
                     else:
@@ -640,58 +743,9 @@ class PlatformerGame(arcade.Window):
             if jump_started:
                 self.jump_count += 1
 
-    def player_lands_on_platform(self, previous_bottom, platform):
-        """Return whether the falling player crossed a platform's top."""
-        crossed_top = previous_bottom >= platform.top and self.player.bottom <= platform.top
-        overlaps_horizontally = (
-            self.player.right > platform.left
-            and self.player.left < platform.right
-        )
-        return self.player.velocity_y <= 0 and crossed_top and overlaps_horizontally
-
     def solid_objects(self):
         """Return all objects that should block the player."""
         return self.platforms + self.walls + self.boundary_walls
-
-    def resolve_slope_collision(
-        self, previous_bottom, incoming_velocity_y, previous_slope=None
-    ):
-        """Land on a slope when the player crosses its angled top surface."""
-        for slope in self.slopes:
-            slope_start = min(slope.start_x, slope.end_x)
-            slope_end = max(slope.start_x, slope.end_x)
-            overlaps_slope_width = (
-                self.player.right > slope_start
-                and self.player.left < slope_end
-            )
-            if not overlaps_slope_width:
-                continue
-
-            contact_x = max(slope_start, min(slope_end, self.player.x))
-            surface_y = slope.surface_y_at(contact_x)
-            crossed_surface = (
-                incoming_velocity_y <= 0
-                and previous_bottom >= surface_y - 2
-                and self.player.bottom <= surface_y + 2
-            )
-            was_on_slope = previous_slope is slope
-            is_touching_surface = self.player.bottom <= surface_y + 2
-            if crossed_surface or (was_on_slope and is_touching_surface):
-                self.player.land_on_slope(slope, incoming_velocity_y)
-                return
-
-        if previous_slope is not None:
-            self.player.current_slope = None
-
-    def maintain_slope_contact(self):
-        """Keep the player's feet on a slope while moving across it."""
-        slope = self.player.current_slope
-        if slope is None or not slope.contains_x(self.player.x):
-            return
-
-        self.player.y = slope.surface_y_at(self.player.x) + self.player.height / 2
-        self.player.velocity_y = 0
-        self.player.on_ground = True
 
     def player_is_standing_on(self, platform):
         """Return whether the player is currently standing on a platform."""
@@ -704,6 +758,7 @@ class PlatformerGame(arcade.Window):
 
     def resolve_wall_collisions(self, previous_x):
         """Stop the player when horizontal movement crosses a solid object."""
+        collided = False
         for solid_object in self.solid_objects():
             overlaps_vertically = (
                 self.player.top > solid_object.bottom
@@ -725,6 +780,7 @@ class PlatformerGame(arcade.Window):
                     abs(self.player.x - previous_x),
                 )
                 self.player.velocity_x = -incoming_speed * WALL_BOUNCE_FACTOR
+                collided = True
             elif (
                 previous_left >= solid_object.right
                 and self.player.left < solid_object.right
@@ -735,6 +791,16 @@ class PlatformerGame(arcade.Window):
                     abs(self.player.x - previous_x),
                 )
                 self.player.velocity_x = incoming_speed * WALL_BOUNCE_FACTOR
+                collided = True
+
+        return collided
+
+    def play_wall_hit_sound(self):
+        """Play one impact sound without buzzing during repeated contacts."""
+        if self.wall_sound_cooldown > 0:
+            return
+        self.audio.play_effect("wall_hit")
+        self.wall_sound_cooldown = 0.12
 
     def resolve_vertical_collisions(self, previous_bottom, previous_top):
         """Land on or bounce off the top and bottom of solid objects."""
@@ -809,7 +875,10 @@ class PlatformerGame(arcade.Window):
 
         self.background_renderer.update(delta_time)
         self.particles.update(delta_time)
-        self.slide_particle_timer -= delta_time
+        self.wall_sound_cooldown = max(
+            0.0,
+            self.wall_sound_cooldown - delta_time,
+        )
 
         self.elapsed_time += delta_time
 
@@ -832,7 +901,7 @@ class PlatformerGame(arcade.Window):
         for platform in self.platforms:
             old_x = platform.center_x
             old_y = platform.center_y
-            blockers = self.walls + self.boundary_walls + self.slopes + [
+            blockers = self.walls + self.boundary_walls + [
                 other for other in self.platforms if other is not platform
             ]
             platform.update(blockers)
@@ -846,58 +915,38 @@ class PlatformerGame(arcade.Window):
         # player is not pressing a movement key. Resolve that carry movement
         # before applying the player's own movement for this frame.
         if standing_platform is not None:
-            self.resolve_wall_collisions(previous_carried_x)
+            if self.resolve_wall_collisions(previous_carried_x):
+                self.play_wall_hit_sound()
             self.resolve_carried_vertical_collisions(
                 previous_carried_y,
                 standing_platform,
             )
 
         self.player.update_jump_charge()
-        if (
-            self.player.current_slope
-            and self.player.on_ground
-        ):
-            self.player.update_slope_physics(self.player.current_slope)
 
         previous_x = self.player.x
         self.player.update_horizontal_position()
-        self.resolve_wall_collisions(previous_x)
-        self.maintain_slope_contact()
+        if self.resolve_wall_collisions(previous_x):
+            self.play_wall_hit_sound()
         previous_top = self.player.top
         incoming_velocity_y = self.player.velocity_y
-        previous_slope = self.player.current_slope
         previous_bottom = self.player.update_vertical_position()
         self.resolve_vertical_collisions(previous_bottom, previous_top)
-        if not self.player.on_ground:
-            self.resolve_slope_collision(
-                previous_bottom,
-                incoming_velocity_y,
-                previous_slope,
-            )
 
         # Visual feedback is based on the same physics transitions that the
         # player experiences, so effects never change gameplay behavior.
         if was_on_ground and not self.player.on_ground and self.player.velocity_y > 0:
             self.particles.emit_jump(self.player.x, self.player.bottom)
         elif not was_on_ground and self.player.on_ground:
+            self.audio.play_effect("land")
             self.particles.emit_landing(
                 self.player.x,
                 self.player.bottom,
                 incoming_velocity_y,
             )
 
-        if self.player.slope_sliding and self.slide_particle_timer <= 0:
-            direction = 1 if self.player.velocity_x >= 0 else -1
-            self.particles.emit_slide(
-                self.player.x,
-                self.player.bottom,
-                direction,
-            )
-            self.slide_particle_timer = 0.1
-
         self.check_win_condition()
         if self.win_screen.visible:
-            self.player.sync_world_position()
             return
 
         current_level = self.level_manager.current_level
@@ -913,11 +962,6 @@ class PlatformerGame(arcade.Window):
             # an imaginary Level 11.
             if current_level.level_index < self.level_manager.total_levels - 1:
                 self.transition_to_adjacent_level(1)
-            else:
-                self.player.sync_world_position()
-
-        else:
-            self.player.sync_world_position()
 
     def on_draw(self):
         """Draw all game objects."""
@@ -932,17 +976,11 @@ class PlatformerGame(arcade.Window):
         for wall in self.previous_walls:
             wall.draw()
 
-        for slope in self.previous_slopes:
-            slope.draw()
-
         for platform in self.previous_platforms:
             platform.draw()
 
         for wall in self.walls:
             wall.draw()
-
-        for slope in self.slopes:
-            slope.draw()
 
         for platform in self.platforms:
             platform.draw()
@@ -959,71 +997,77 @@ class PlatformerGame(arcade.Window):
         self.pause_screen.draw()
 
     def draw_hud(self):
-        """Draw compact interface information above the game world."""
+        """Draw compact interface information inside the side structures."""
         level_number = self.level_manager.current_level_number
         total_levels = self.level_manager.total_levels
+        show_hud = self.settings_store.get("show_hud")
+        show_control_hints = self.settings_store.get("show_control_hints")
 
-        if not self.settings_store.get("show_hud"):
-            if self.settings_store.get("show_control_hints"):
-                self.controls_text.draw()
+        if not show_hud and not show_control_hints:
             return
 
-        arcade.draw_lbwh_rectangle_filled(
-            16,
-            SCREEN_HEIGHT - 48,
-            180,
-            32,
-            (14, 22, 40, 190),
-        )
-        arcade.draw_lbwh_rectangle_outline(
-            16,
-            SCREEN_HEIGHT - 48,
-            180,
-            32,
-            (143, 211, 191),
-            1,
-        )
-        arcade.draw_lbwh_rectangle_filled(
-            210,
-            SCREEN_HEIGHT - 48,
-            190,
-            32,
-            (14, 22, 40, 190),
-        )
-        arcade.draw_lbwh_rectangle_outline(
-            210,
-            SCREEN_HEIGHT - 48,
-            190,
-            32,
-            (143, 211, 191),
-            1,
-        )
-        self.level_text.text = f"LEVEL {level_number:02d} / {total_levels:02d}"
-        self.title_text.draw()
-        self.level_text.draw()
+        panel_bottom = 466
+        panel_height = 118
+        panel_width = 46
+        left_panel = 5
+        right_panel = SCREEN_WIDTH - left_panel - panel_width
 
-        self.stats_text.text = (
-            f"TIME {self.formatted_elapsed_time()}   JUMPS {self.jump_count:03d}"
-        )
-        self.stats_text.draw()
+        self.draw_hud_panel(left_panel, panel_bottom, panel_width, panel_height)
+        self.draw_hud_panel(right_panel, panel_bottom, panel_width, panel_height)
 
-        progress_left = SCREEN_WIDTH - 170
-        progress_bottom = SCREEN_HEIGHT - 38
-        progress_width = 138
-        arcade.draw_lbwh_rectangle_filled(
-            progress_left,
-            progress_bottom,
-            progress_width,
-            5,
-            (14, 22, 40, 190),
-        )
-        progress_ratio = (level_number - 1) / max(1, total_levels - 1)
-        arcade.draw_lbwh_rectangle_filled(
-            progress_left,
-            progress_bottom,
-            progress_width * progress_ratio,
-            5,
-            (143, 211, 191),
-        )
-        if self.settings_store.get("show_control_hints"):
+        if show_hud:
+            self.level_text.text = f"{level_number:02d}/{total_levels:02d}"
+            self.level_label_text.draw()
+            self.level_text.draw()
+
+            self.stats_text.text = self.formatted_elapsed_time()
+            self.jumps_text.text = f"{self.jump_count:03d}"
+            self.time_label_text.draw()
+            self.stats_text.draw()
+            self.jumps_label_text.draw()
+            self.jumps_text.draw()
+            self.progress_label_text.draw()
+
+            progress_left = right_panel + 8
+            progress_bottom = 468
+            progress_width = panel_width - 16
+            arcade.draw_lbwh_rectangle_filled(
+                progress_left,
+                progress_bottom,
+                progress_width,
+                4,
+                (14, 22, 40, 210),
+            )
+            progress_ratio = level_number / max(1, total_levels)
+            arcade.draw_lbwh_rectangle_filled(
+                progress_left,
+                progress_bottom,
+                max(2, progress_width * progress_ratio),
+                4,
+                (143, 211, 191),
+            )
+
+        if show_control_hints:
+            self.move_label_text.draw()
             self.controls_text.draw()
+            self.aim_label_text.draw()
+            self.aim_controls_text.draw()
+
+    @staticmethod
+    def draw_hud_panel(left, bottom, width, height):
+        """Draw one compact HUD panel over a decorative side wall."""
+        arcade.draw_lbwh_rectangle_filled(
+            left,
+            bottom,
+            width,
+            height,
+            (7, 15, 27, 220),
+        )
+        arcade.draw_lbwh_rectangle_outline(
+            left,
+            bottom,
+            width,
+            height,
+            (46, 91, 92),
+            1,
+        )

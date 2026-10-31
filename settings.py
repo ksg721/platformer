@@ -43,8 +43,5 @@ JUMP_BAR_HEIGHT = 5
 JUMP_BAR_GAP = 5
 JUMP_BAR_BACKGROUND_COLOR = arcade.color.DARK_GRAY
 JUMP_BAR_COLOR = arcade.color.YELLOW
-SLOPE_SLIDE_FRICTION = 0.75
-SLOPE_STATIC_FRICTION = 0.75
-
 # The starting platform is centered at y=70 and is 12 pixels tall.
 PLAYER_START_Y = 83.5

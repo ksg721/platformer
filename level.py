@@ -2,7 +2,6 @@
 
 from game_platform import Platform
 from settings import LEVEL_HEIGHT
-from slope import Slope
 from wall import Wall, WallBarrier
 
 
@@ -16,7 +15,6 @@ class Level:
         start_y,
         level_index=0,
         wall_data=None,
-        slope_data=None,
     ):
         """Create a level from platform settings.
 
@@ -29,7 +27,6 @@ class Level:
         self.start_y = start_y
         self.level_index = level_index
         self.wall_data = wall_data or []
-        self.slope_data = slope_data or []
 
     @property
     def world_offset_y(self):
@@ -71,14 +68,3 @@ class Level:
                 wall_data["center_y"] += self.world_offset_y
             walls.append(Wall(**wall_data))
         return walls
-
-    def create_slopes(self, world_coordinates=False):
-        """Create and return this level's angled surfaces."""
-        slopes = []
-        for data in self.slope_data:
-            slope_data = data.copy()
-            if world_coordinates:
-                slope_data["start_y"] += self.world_offset_y
-                slope_data["end_y"] += self.world_offset_y
-            slopes.append(Slope(**slope_data))
-        return slopes

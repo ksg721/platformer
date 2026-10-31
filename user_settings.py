@@ -17,6 +17,8 @@ class SettingsStore:
         "reduced_effects": False,
         "reduced_camera_motion": False,
         "show_control_hints": True,
+        "music_enabled": True,
+        "sound_effects_enabled": True,
     }
 
     SENSITIVITY_VALUES = (0.75, 1.0, 1.25)

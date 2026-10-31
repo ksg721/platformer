@@ -320,7 +320,7 @@ class Particle:
 
 
 class ParticleSystem:
-    """Manage small bursts created by jumps, landings, and slides."""
+    """Manage small bursts created by jumps and landings."""
 
     def __init__(self):
         self.particles = []
@@ -358,9 +358,8 @@ class ParticleSystem:
                     0.25 + index * 0.03,
                     1.5,
                     (255, 226, 145),
-                )
             )
-
+        )
     def emit_landing(self, x, y, impact_speed):
         """Emit dust outward from a landing, scaled by impact speed."""
         if not self.enabled:
@@ -379,19 +378,3 @@ class ParticleSystem:
                     (242, 210, 162),
                 )
             )
-
-    def emit_slide(self, x, y, direction):
-        """Emit a short trail while the player is actively sliding."""
-        if not self.enabled:
-            return
-        self.particles.append(
-            Particle(
-                x - direction * 5,
-                y,
-                -direction * 0.35,
-                0.4,
-                0.22,
-                1.3,
-                (255, 238, 173),
-            )
-        )

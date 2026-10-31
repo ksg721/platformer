@@ -70,8 +70,17 @@ class WinScreen:
             anchor_x="center",
             bold=True,
         )
+        self.title_button_text = arcade.Text(
+            "TITLE SCREEN",
+            center_x + 170,
+            screen_height / 2 - 88,
+            (20, 30, 50),
+            9,
+            anchor_x="center",
+            bold=True,
+        )
         self.prompt_text = arcade.Text(
-            "TYPE A NAME, THEN PRESS ENTER OR CLICK SAVE",
+            "ENTER OR CLICK SAVE  |  ESC: TITLE SCREEN",
             center_x,
             screen_height / 2 - 137,
             (190, 216, 207),
@@ -90,7 +99,7 @@ class WinScreen:
         self.score_saved = False
         self.name_text.text = "TYPE YOUR NAME"
         self.save_button_text.text = "SAVE SCORE"
-        self.prompt_text.text = "TYPE A NAME, THEN PRESS ENTER OR CLICK SAVE"
+        self.prompt_text.text = "ENTER OR CLICK SAVE  |  ESC: TITLE SCREEN"
         self.prompt_text.color = (190, 216, 207)
         self.visible = True
 
@@ -147,10 +156,24 @@ class WinScreen:
             <= self.save_button_bottom + self.save_button_height
         )
 
+    def title_button_contains(self, x, y):
+        """Return whether a point is inside the title-screen button."""
+        return (
+            self.title_button_left <= x <= self.title_button_left + self.title_button_width
+            and self.title_button_bottom
+            <= y
+            <= self.title_button_bottom + self.title_button_height
+        )
+
     @property
     def save_button_left(self):
         """Return the left edge of the save/action button."""
         return self.screen_width / 2 - 100
+
+    @property
+    def title_button_left(self):
+        """Return the left edge of the title-screen button."""
+        return self.screen_width / 2 + 110
 
     @property
     def save_button_bottom(self):
@@ -158,14 +181,29 @@ class WinScreen:
         return self.screen_height / 2 - 108
 
     @property
+    def title_button_bottom(self):
+        """Return the bottom edge of the title-screen button."""
+        return self.save_button_bottom
+
+    @property
     def save_button_width(self):
         """Return the save/action button width."""
         return 200
 
     @property
+    def title_button_width(self):
+        """Return the width of the title-screen button."""
+        return 120
+
+    @property
     def save_button_height(self):
         """Return the save/action button height."""
         return 42
+
+    @property
+    def title_button_height(self):
+        """Return the height of the title-screen button."""
+        return self.save_button_height
 
     def _update_name_text(self):
         """Refresh the visible name field after text input."""
@@ -250,6 +288,33 @@ class WinScreen:
             2,
         )
 
+        title_button_hovered = self.title_button_contains(self.mouse_x, self.mouse_y)
+        title_button_color = (
+            (255, 224, 137) if title_button_hovered else (143, 211, 191)
+        )
+        arcade.draw_lbwh_rectangle_filled(
+            self.title_button_left + 4,
+            self.title_button_bottom - 4,
+            self.title_button_width,
+            self.title_button_height,
+            (7, 15, 27),
+        )
+        arcade.draw_lbwh_rectangle_filled(
+            self.title_button_left,
+            self.title_button_bottom,
+            self.title_button_width,
+            self.title_button_height,
+            title_button_color,
+        )
+        arcade.draw_lbwh_rectangle_outline(
+            self.title_button_left,
+            self.title_button_bottom,
+            self.title_button_width,
+            self.title_button_height,
+            (255, 241, 177),
+            2,
+        )
+
         beacon_x = self.screen_width / 2
         beacon_y = panel_bottom + panel_height - 28
         arcade.draw_circle_filled(
@@ -279,4 +344,5 @@ class WinScreen:
         self.name_label_text.draw()
         self.name_text.draw()
         self.save_button_text.draw()
+        self.title_button_text.draw()
         self.prompt_text.draw()

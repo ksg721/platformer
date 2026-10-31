@@ -27,8 +27,6 @@ from settings import (
     PLAYER_WIDTH,
     SCREEN_HEIGHT,
     SCREEN_WIDTH,
-    SLOPE_STATIC_FRICTION,
-    SLOPE_SLIDE_FRICTION,
     VERTICAL_AIM_TOLERANCE,
 )
 
@@ -48,7 +46,6 @@ class Player:
         self.height = PLAYER_HEIGHT
         self.x = SCREEN_WIDTH / 2
         self.y = PLAYER_START_Y
-        self.world_y = self.y
         self.velocity_x = 0
         self.velocity_y = 0
         self.on_ground = True
@@ -56,8 +53,6 @@ class Player:
         self.jump_charge = 0
         self.left_pressed = False
         self.right_pressed = False
-        self.current_slope = None
-        self.slope_sliding = False
         self.mouse_x = self.x
         self.mouse_y = self.y + 100
         self.camera_offset_y = 0
@@ -119,8 +114,6 @@ class Player:
             self.velocity_y = math.sin(jump_angle) * jump_speed
             self.jump_charge = 0
             self.on_ground = False
-            self.current_slope = None
-            self.slope_sliding = False
             return True
         elif not self.on_ground:
             self.jump_charge = 0
@@ -211,12 +204,7 @@ class Player:
             self.velocity_x += ACCELERATION
         else:
             # Friction slows the player when no horizontal direction is held.
-            friction = (
-                SLOPE_SLIDE_FRICTION
-                if self.current_slope and self.slope_sliding
-                else FRICTION
-            )
-            self.velocity_x *= friction
+            self.velocity_x *= FRICTION
 
         self.velocity_x = max(-MAX_SPEED, min(MAX_SPEED, self.velocity_x))
         if not self.jump_keys_held:
@@ -243,8 +231,6 @@ class Player:
         self.velocity_y -= GRAVITY
         self.y += self.velocity_y
         self.on_ground = False
-        self.current_slope = None
-        self.slope_sliding = False
         return previous_bottom
 
     def land_on(self, platform_top):
@@ -252,69 +238,20 @@ class Player:
         self.y = platform_top + self.height / 2
         self.velocity_y = 0
         self.on_ground = True
-        self.current_slope = None
-        self.slope_sliding = False
-
-    def land_on_slope(self, slope, incoming_velocity_y):
-        """Land on a slope and transfer falling momentum into it."""
-        self.y = slope.surface_y_at(self.x) + self.height / 2
-        self.velocity_y = 0
-        self.on_ground = True
-        self.current_slope = slope
-        self.slope_sliding = False
-
-        # Gravity points downward. Projecting the incoming downward speed
-        # onto the slope sends the player toward the lower end of the slope.
-        if abs(slope.tangent_x) > 0.001:
-            self.velocity_x += incoming_velocity_y * slope.tangent_y / slope.tangent_x
-
-    def update_slope_physics(self, slope):
-        """Apply slope gravity and static friction to horizontal momentum."""
-        if abs(slope.tangent_x) <= 0.001:
-            return
-
-        slope_force = -GRAVITY * slope.tangent_y / slope.tangent_x
-        proposed_velocity = self.velocity_x + slope_force
-
-        # Manual steering should move the player along the slope without
-        # turning a normal walk into an automatic slide.
-        if not self.slope_sliding and (self.left_pressed or self.right_pressed):
-            return
-
-        # Small momentum is absorbed by static friction. Larger momentum
-        # overcomes it and turns the player into a sliding state.
-        if (
-            not self.slope_sliding
-            and not self.left_pressed
-            and not self.right_pressed
-            and abs(proposed_velocity) <= SLOPE_STATIC_FRICTION
-        ):
-            self.velocity_x = 0
-            return
-
-        self.slope_sliding = True
-        self.velocity_x = proposed_velocity
 
     def reset(self):
         """Return the player to the starting position."""
         self.x = SCREEN_WIDTH / 2
         self.y = PLAYER_START_Y
-        self.world_y = self.y
         self.velocity_x = 0
         self.velocity_y = 0
         self.on_ground = True
-        self.current_slope = None
-        self.slope_sliding = False
         self.jump_keys_held.clear()
         self.jump_charge = 0
 
     def set_camera_offset(self, offset_y):
         """Tell the player where the camera currently views the world."""
         self.camera_offset_y = offset_y
-
-    def sync_world_position(self, level_offset_y=0):
-        """Keep the compatibility world-position value synced to physics."""
-        self.world_y = self.y
 
     def draw(self):
         """Draw the player as a small expressive explorer character."""
